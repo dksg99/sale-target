@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kế hoạch kinh doanh CHCS FY26</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --ink: #1c2321;
+    --paper: #fafaf8;
+    --line: #dcdad2;
+    --accent: #2f6f4f;
+    --accent-soft: #e7f0ea;
+    --muted: #6b6f6c;
+    --danger: #a4372f;
+    --mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+    --sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--line);
+    background: #fff;
+  }
+  header h1 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  header .sub {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  #user-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  #user-bar button {
+    border: 1px solid var(--line);
+    background: #fff;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--ink);
+  }
+  #user-bar button:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ---------- Login screen ---------- */
+  #login-screen {
+    max-width: 340px;
+    margin: 96px auto;
+    padding: 32px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+  }
+  #login-screen h2 { margin: 0 0 4px; font-size: 16px; }
+  #login-screen p.hint { color: var(--muted); font-size: 12px; margin: 0 0 20px; }
+  #login-screen label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  #login-screen input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    margin-bottom: 14px;
+    font-size: 14px;
+    font-family: var(--sans);
+  }
+  #login-screen input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  #login-screen button {
+    width: 100%;
+    padding: 9px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  #login-screen button:disabled { opacity: 0.6; cursor: default; }
+  #login-error {
+    color: var(--danger);
+    font-size: 12px;
+    margin-top: 10px;
+    display: none;
+  }
+
+  /* ---------- App shell ---------- */
+  #app { display: none; }
+  main { padding: 20px 28px; }
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .toolbar input, .toolbar select {
+    padding: 7px 10px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: var(--sans);
+    background: #fff;
+  }
+  .toolbar input[type="search"] { flex: 1; min-width: 200px; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 14px; }
+  .tabs button {
+    padding: 7px 14px;
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--muted);
+  }
+  .tabs button.active {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .meta-row {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    font-size: 12.5px;
+  }
+  thead th {
+    position: sticky;
+    top: 0;
+    background: var(--ink);
+    color: #fff;
+    text-align: left;
+    padding: 8px 10px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  tbody tr:hover { background: var(--accent-soft); }
+  .table-wrap {
+    max-height: 68vh;
+    overflow: auto;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+  }
+  .num { text-align: right; font-family: var(--mono); }
+  .loading, .empty {
+    padding: 40px;
+    text-align: center;
+    color: var(--muted);
+  }
+  .badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="login-screen">
+  <h2>Đăng nhập</h2>
+  <p class="hint">Kế hoạch kinh doanh CHCS &middot; FY26</p>
+  <form id="login-form">
+    <label for="username">Tài khoản</label>
+    <input id="username" autocomplete="username" required />
+    <label for="password">Mật khẩu</label>
+    <input id="password" type="password" autocomplete="current-password" required />
+    <button type="submit" id="login-btn">Đăng nhập</button>
+    <div id="login-error"></div>
+  </form>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app">
+  <header>
+    <div>
+      <h1>Kế hoạch kinh doanh CHCS</h1>
+      <div class="sub">FY26 &middot; nguồn dữ liệu: Supabase</div>
+    </div>
+    <div id="user-bar">
+      <span id="user-info"></span>
+      <button id="logout-btn">Đăng xuất</button>
+    </div>
+  </header>
+  <main>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="sale_target">Sale Target</button>
+      <button class="tab-btn" data-tab="catalog">Catalog</button>
+    </div>
+
+    <div class="toolbar">
+      <input type="search" id="search-box" placeholder="Tìm theo khách hàng, sản phẩm, PS..." />
+      <select id="month-filter"><option value="">Tất cả tháng</option></select>
+    </div>
+
+    <div class="meta-row" id="meta-row"></div>
+    <div class="table-wrap">
+      <div id="table-container"><div class="loading">Đang tải dữ liệu...</div></div>
+    </div>
+  </main>
+</div>
+
+<script>
+  // ---- Cấu hình Supabase (chỉ dùng anon key — an toàn để lộ trên client) ----
+  const SUPABASE_URL = "https://nrfxymnfmjhbsgpipvkb.supabase.co";       // TODO: thay bằng Project URL thật
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yZnh5bW5mbWpoYnNncGlwdmtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4ODk2OTQsImV4cCI6MjA5ODQ2NTY5NH0.cN-jTdPOLWKd9kNa1nNMENzHcY0_BftyYgPEbuVTWeo";                        // TODO: thay bằng anon public key thật
+  const LOGIN_FUNCTION_URL = SUPABASE_URL + "/functions/v1/login";
+
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let currentData = { sale_target: [], catalog: [] };
+  let activeTab = "sale_target";
+
+  const SALE_TARGET_COLUMNS = [
+    ["thang_ke_hoach", "Tháng KH"],
+    ["mien", "Miền"],
+    ["ps", "PS"],
+    ["khach_hang", "Khách hàng"],
+    ["ma_khach_hang", "Mã KH"],
+    ["nhom_san_pham", "Nhóm SP"],
+    ["san_pham", "Sản phẩm"],
+    ["sl_ke_hoach_update", "SL KH Update", "num"],
+    ["don_gia", "Đơn giá", "num"],
+    ["doanh_thu_kh_update", "Doanh thu KH Update", "num"],
+    ["sl_thuc_hien", "SL thực hiện", "num"],
+  ];
+
+  const CATALOG_COLUMNS = [
+    ["nhom_san_pham", "Nhóm SP"],
+    ["bo_vat_tu", "Bộ vật tư"],
+    ["san_pham", "Sản phẩm"],
+    ["don_gia", "Đơn giá", "num"],
+  ];
+
+  // ---------- Auth ----------
+  function saveSession(session) {
+    sessionStorage.setItem("kh_session", JSON.stringify(session));
+  }
+  function getSession() {
+    try { return JSON.parse(sessionStorage.getItem("kh_session")); }
+    catch { return null; }
+  }
+  function clearSession() { sessionStorage.removeItem("kh_session"); }
+
+  document.getElementById("login-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+    const btn = document.getElementById("login-btn");
+    const errBox = document.getElementById("login-error");
+    errBox.style.display = "none";
+    btn.disabled = true;
+    btn.textContent = "Đang kiểm tra...";
+
+    try {
+      const res = await fetch(LOGIN_FUNCTION_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      const result = await res.json();
+      if (!result.success) {
+        errBox.textContent = result.message || "Đăng nhập thất bại";
+        errBox.style.display = "block";
+        return;
+      }
+      saveSession(result);
+      showApp(result);
+    } catch (err) {
+      errBox.textContent = "Không kết nối được máy chủ. Thử lại sau.";
+      errBox.style.display = "block";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Đăng nhập";
+    }
+  });
+
+  document.getElementById("logout-btn").addEventListener("click", () => {
+    clearSession();
+    location.reload();
+  });
+
+  function showApp(session) {
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    document.getElementById("user-info").textContent =
+      `${session.username} · ${session.role}${session.scope ? " · " + session.scope : ""}`;
+    loadData(session);
+  }
+
+  // ---------- Data loading ----------
+  async function loadData(session) {
+    const [{ data: saleTarget, error: e1 }, { data: catalog, error: e2 }] = await Promise.all([
+      sb.from("sale_target").select("*"),
+      sb.from("catalog").select("*"),
+    ]);
+
+    if (e1 || e2) {
+      document.getElementById("table-container").innerHTML =
+        `<div class="empty">Lỗi tải dữ liệu: ${(e1 || e2).message}</div>`;
+      return;
+    }
+
+    // Lọc theo scope nếu role không phải admin.
+    // LƯU Ý: đây chỉ là lọc phía client để hiển thị — vì bảng sale_target/catalog
+    // đang cho phép đọc công khai qua anon key (RLS "public read"), lọc này
+    // KHÔNG ngăn được ai đó gọi thẳng Supabase API để lấy toàn bộ dữ liệu.
+    // Muốn enforce thật cần chuyển sang Supabase Auth + RLS theo auth.uid().
+    currentData.sale_target = filterByScope(saleTarget, session);
+    currentData.catalog = catalog;
+
+    populateMonthFilter(currentData.sale_target);
+    renderTable();
+  }
+
+  function filterByScope(rows, session) {
+    if (!session || session.role === "admin" || !session.scope) return rows;
+    return rows.filter((r) => r.ps === session.scope || r.mien === session.scope);
+  }
+
+  function populateMonthFilter(rows) {
+    const select = document.getElementById("month-filter");
+    const months = [...new Set(rows.map((r) => r.thang_ke_hoach).filter(Boolean))].sort();
+    select.innerHTML = '<option value="">Tất cả tháng</option>' +
+      months.map((m) => `<option value="${m}">${m}</option>`).join("");
+  }
+
+  // ---------- Rendering ----------
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      activeTab = btn.dataset.tab;
+      document.getElementById("month-filter").style.display =
+        activeTab === "sale_target" ? "inline-block" : "none";
+      renderTable();
+    });
+  });
+
+  document.getElementById("search-box").addEventListener("input", renderTable);
+  document.getElementById("month-filter").addEventListener("change", renderTable);
+
+  function fmtNum(v) {
+    if (v === null || v === undefined || v === "") return "";
+    const n = Number(v);
+    if (Number.isNaN(n)) return v;
+    return n.toLocaleString("vi-VN");
+  }
+
+  function renderTable() {
+    const columns = activeTab === "sale_target" ? SALE_TARGET_COLUMNS : CATALOG_COLUMNS;
+    let rows = currentData[activeTab] || [];
+
+    const q = document.getElementById("search-box").value.trim().toLowerCase();
+    if (q) {
+      rows = rows.filter((r) =>
+        columns.some(([key]) => String(r[key] ?? "").toLowerCase().includes(q))
+      );
+    }
+
+    if (activeTab === "sale_target") {
+      const month = document.getElementById("month-filter").value;
+      if (month) rows = rows.filter((r) => r.thang_ke_hoach === month);
+    }
+
+    document.getElementById("meta-row").innerHTML =
+      `<span class="badge">${rows.length.toLocaleString("vi-VN")} dòng</span>`;
+
+    const container = document.getElementById("table-container");
+    if (!rows.length) {
+      container.innerHTML = '<div class="empty">Không có dữ liệu phù hợp.</div>';
+      return;
+    }
+
+    const thead = "<thead><tr>" +
+      columns.map(([, label]) => `<th>${label}</th>`).join("") + "</tr></thead>";
+
+    const bodyRows = rows.slice(0, 2000).map((r) => {
+      const cells = columns.map(([key, , type]) => {
+        const val = type === "num" ? fmtNum(r[key]) : (r[key] ?? "");
+        return `<td class="${type === "num" ? "num" : ""}">${val}</td>`;
+      }).join("");
+      return `<tr>${cells}</tr>`;
+    }).join("");
+
+    container.innerHTML = `<table>${thead}<tbody>${bodyRows}</tbody></table>`;
+
+    if (rows.length > 2000) {
+      container.innerHTML += `<div class="meta-row" style="padding:8px 10px">Hiển thị 2.000/${rows.length.toLocaleString("vi-VN")} dòng — thu hẹp bằng tìm kiếm hoặc lọc tháng.</div>`;
+    }
+  }
+
+  // ---------- Bootstrap ----------
+  (function init() {
+    const session = getSession();
+    if (session) showApp(session);
+  })();
+</script>
+
+</body>
+</html>
