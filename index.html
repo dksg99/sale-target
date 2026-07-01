@@ -2,435 +2,2210 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Kế hoạch kinh doanh CHCS FY26</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<title>Kế hoạch kinh doanh FY26</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <style>
-  :root {
-    --ink: #1c2321;
-    --paper: #fafaf8;
-    --line: #dcdad2;
-    --accent: #2f6f4f;
-    --accent-soft: #e7f0ea;
-    --muted: #6b6f6c;
-    --danger: #a4372f;
-    --mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
-    --sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--paper);
-    color: var(--ink);
-    font-family: var(--sans);
-    font-size: 14px;
-    line-height: 1.5;
-  }
-  header {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    padding: 20px 28px;
-    border-bottom: 1px solid var(--line);
-    background: #fff;
-  }
-  header h1 {
-    font-size: 18px;
-    font-weight: 700;
-    margin: 0;
-    letter-spacing: -0.01em;
-  }
-  header .sub {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--muted);
-  }
-  #user-bar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 13px;
-    color: var(--muted);
-  }
-  #user-bar button {
-    border: 1px solid var(--line);
-    background: #fff;
-    padding: 5px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-    color: var(--ink);
-  }
-  #user-bar button:hover { border-color: var(--accent); color: var(--accent); }
-
-  /* ---------- Login screen ---------- */
-  #login-screen {
-    max-width: 340px;
-    margin: 96px auto;
-    padding: 32px;
-    background: #fff;
-    border: 1px solid var(--line);
-    border-radius: 6px;
-  }
-  #login-screen h2 { margin: 0 0 4px; font-size: 16px; }
-  #login-screen p.hint { color: var(--muted); font-size: 12px; margin: 0 0 20px; }
-  #login-screen label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
-  #login-screen input {
-    width: 100%;
-    padding: 8px 10px;
-    border: 1px solid var(--line);
-    border-radius: 4px;
-    margin-bottom: 14px;
-    font-size: 14px;
-    font-family: var(--sans);
-  }
-  #login-screen input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-  #login-screen button {
-    width: 100%;
-    padding: 9px;
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    font-size: 14px;
-    cursor: pointer;
-  }
-  #login-screen button:disabled { opacity: 0.6; cursor: default; }
-  #login-error {
-    color: var(--danger);
-    font-size: 12px;
-    margin-top: 10px;
-    display: none;
-  }
-
-  /* ---------- App shell ---------- */
-  #app { display: none; }
-  main { padding: 20px 28px; }
-  .toolbar {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 14px;
-    flex-wrap: wrap;
-  }
-  .toolbar input, .toolbar select {
-    padding: 7px 10px;
-    border: 1px solid var(--line);
-    border-radius: 4px;
-    font-size: 13px;
-    font-family: var(--sans);
-    background: #fff;
-  }
-  .toolbar input[type="search"] { flex: 1; min-width: 200px; }
-  .tabs { display: flex; gap: 4px; margin-bottom: 14px; }
-  .tabs button {
-    padding: 7px 14px;
-    border: 1px solid var(--line);
-    background: #fff;
-    border-radius: 4px;
-    font-size: 13px;
-    cursor: pointer;
-    color: var(--muted);
-  }
-  .tabs button.active {
-    background: var(--accent-soft);
-    border-color: var(--accent);
-    color: var(--accent);
-    font-weight: 600;
-  }
-  .meta-row {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--muted);
-    margin-bottom: 10px;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    background: #fff;
-    font-size: 12.5px;
-  }
-  thead th {
-    position: sticky;
-    top: 0;
-    background: var(--ink);
-    color: #fff;
-    text-align: left;
-    padding: 8px 10px;
-    font-weight: 600;
-    white-space: nowrap;
-  }
-  tbody td {
-    padding: 7px 10px;
-    border-bottom: 1px solid var(--line);
-    white-space: nowrap;
-  }
-  tbody tr:hover { background: var(--accent-soft); }
-  .table-wrap {
-    max-height: 68vh;
-    overflow: auto;
-    border: 1px solid var(--line);
-    border-radius: 6px;
-  }
-  .num { text-align: right; font-family: var(--mono); }
-  .loading, .empty {
-    padding: 40px;
-    text-align: center;
-    color: var(--muted);
-  }
-  .badge {
-    display: inline-block;
-    font-family: var(--mono);
-    font-size: 10.5px;
-    padding: 1px 6px;
-    border-radius: 3px;
-    background: var(--accent-soft);
-    color: var(--accent);
-  }
+  body { font-family: 'Inter', system-ui, sans-serif; margin: 0; background: #f1f5f9; }
+  #boot { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #f1f5f9; z-index: 100; }
+  #boot .spinner { width: 32px; height: 32px; border: 3px solid #cbd5e1; border-top-color: #10b981; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+  #boot .err { color: #dc2626; font-size: 12px; max-width: 400px; margin-top: 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  input, button, select, textarea { font-family: inherit; }
+  .scroll-shadow::-webkit-scrollbar { height: 8px; width: 8px; }
+  .scroll-shadow::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  .scroll-shadow::-webkit-scrollbar-track { background: transparent; }
 </style>
 </head>
 <body>
-
-<!-- ============ LOGIN ============ -->
-<div id="login-screen">
-  <h2>Đăng nhập</h2>
-  <p class="hint">Kế hoạch kinh doanh CHCS &middot; FY26</p>
-  <form id="login-form">
-    <label for="username">Tài khoản</label>
-    <input id="username" autocomplete="username" required />
-    <label for="password">Mật khẩu</label>
-    <input id="password" type="password" autocomplete="current-password" required />
-    <button type="submit" id="login-btn">Đăng nhập</button>
-    <div id="login-error"></div>
-  </form>
+<div id="boot">
+  <div style="text-align:center;color:#64748b;font-size:13px">
+    <div class="spinner"></div>
+    Đang khởi động…
+    <div id="boot-err" class="err"></div>
+  </div>
 </div>
-
-<!-- ============ APP ============ -->
-<div id="app">
-  <header>
-    <div>
-      <h1>Kế hoạch kinh doanh CHCS</h1>
-      <div class="sub">FY26 &middot; nguồn dữ liệu: Supabase</div>
-    </div>
-    <div id="user-bar">
-      <span id="user-info"></span>
-      <button id="logout-btn">Đăng xuất</button>
-    </div>
-  </header>
-  <main>
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="sale_target">Sale Target</button>
-      <button class="tab-btn" data-tab="catalog">Catalog</button>
-    </div>
-
-    <div class="toolbar">
-      <input type="search" id="search-box" placeholder="Tìm theo khách hàng, sản phẩm, PS..." />
-      <select id="month-filter"><option value="">Tất cả tháng</option></select>
-    </div>
-
-    <div class="meta-row" id="meta-row"></div>
-    <div class="table-wrap">
-      <div id="table-container"><div class="loading">Đang tải dữ liệu...</div></div>
-    </div>
-  </main>
-</div>
-
+<div id="root"></div>
 <script>
-  // ---- Cấu hình Supabase (chỉ dùng anon key — an toàn để lộ trên client) ----
-  const SUPABASE_URL = "https://nrfxymnfmjhbsgpipvkb.supabase.co";       // TODO: thay bằng Project URL thật
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yZnh5bW5mbWpoYnNncGlwdmtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4ODk2OTQsImV4cCI6MjA5ODQ2NTY5NH0.cN-jTdPOLWKd9kNa1nNMENzHcY0_BftyYgPEbuVTWeo";                        // TODO: thay bằng anon public key thật
-  const LOGIN_FUNCTION_URL = SUPABASE_URL + "/functions/v1/login";
-
-  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  let currentData = { sale_target: [], catalog: [] };
-  let activeTab = "sale_target";
-
-  const SALE_TARGET_COLUMNS = [
-    ["thang_ke_hoach", "Tháng KH"],
-    ["mien", "Miền"],
-    ["ps", "PS"],
-    ["khach_hang", "Khách hàng"],
-    ["ma_khach_hang", "Mã KH"],
-    ["nhom_san_pham", "Nhóm SP"],
-    ["san_pham", "Sản phẩm"],
-    ["sl_ke_hoach_update", "SL KH Update", "num"],
-    ["don_gia", "Đơn giá", "num"],
-    ["doanh_thu_kh_update", "Doanh thu KH Update", "num"],
-    ["sl_thuc_hien", "SL thực hiện", "num"],
-  ];
-
-  const CATALOG_COLUMNS = [
-    ["nhom_san_pham", "Nhóm SP"],
-    ["bo_vat_tu", "Bộ vật tư"],
-    ["san_pham", "Sản phẩm"],
-    ["don_gia", "Đơn giá", "num"],
-  ];
-
-  // ---------- Auth ----------
-  function saveSession(session) {
-    sessionStorage.setItem("kh_session", JSON.stringify(session));
-  }
-  function getSession() {
-    try { return JSON.parse(sessionStorage.getItem("kh_session")); }
-    catch { return null; }
-  }
-  function clearSession() { sessionStorage.removeItem("kh_session"); }
-
-  document.getElementById("login-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const username = document.getElementById("username").value.trim();
-    const password = document.getElementById("password").value;
-    const btn = document.getElementById("login-btn");
-    const errBox = document.getElementById("login-error");
-    errBox.style.display = "none";
-    btn.disabled = true;
-    btn.textContent = "Đang kiểm tra...";
-
-    try {
-      const res = await fetch(LOGIN_FUNCTION_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-      const result = await res.json();
-      if (!result.success) {
-        errBox.textContent = result.message || "Đăng nhập thất bại";
-        errBox.style.display = "block";
-        return;
-      }
-      saveSession(result);
-      showApp(result);
-    } catch (err) {
-      errBox.textContent = "Không kết nối được máy chủ. Thử lại sau.";
-      errBox.style.display = "block";
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "Đăng nhập";
+  setTimeout(function() {
+    if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+      document.getElementById('boot-err').textContent = 'Không tải được React/ReactDOM từ CDN.';
     }
-  });
-
-  document.getElementById("logout-btn").addEventListener("click", () => {
-    clearSession();
-    location.reload();
-  });
-
-  function showApp(session) {
-    document.getElementById("login-screen").style.display = "none";
-    document.getElementById("app").style.display = "block";
-    document.getElementById("user-info").textContent =
-      `${session.username} · ${session.role}${session.scope ? " · " + session.scope : ""}`;
-    loadData(session);
-  }
-
-  // ---------- Data loading ----------
-  async function loadData(session) {
-    const [{ data: saleTarget, error: e1 }, { data: catalog, error: e2 }] = await Promise.all([
-      sb.from("sale_target").select("*"),
-      sb.from("catalog").select("*"),
-    ]);
-
-    if (e1 || e2) {
-      document.getElementById("table-container").innerHTML =
-        `<div class="empty">Lỗi tải dữ liệu: ${(e1 || e2).message}</div>`;
-      return;
-    }
-
-    // Lọc theo scope nếu role không phải admin.
-    // LƯU Ý: đây chỉ là lọc phía client để hiển thị — vì bảng sale_target/catalog
-    // đang cho phép đọc công khai qua anon key (RLS "public read"), lọc này
-    // KHÔNG ngăn được ai đó gọi thẳng Supabase API để lấy toàn bộ dữ liệu.
-    // Muốn enforce thật cần chuyển sang Supabase Auth + RLS theo auth.uid().
-    currentData.sale_target = filterByScope(saleTarget, session);
-    currentData.catalog = catalog;
-
-    populateMonthFilter(currentData.sale_target);
-    renderTable();
-  }
-
-  function filterByScope(rows, session) {
-    if (!session || session.role === "admin" || !session.scope) return rows;
-    return rows.filter((r) => r.ps === session.scope || r.mien === session.scope);
-  }
-
-  function populateMonthFilter(rows) {
-    const select = document.getElementById("month-filter");
-    const months = [...new Set(rows.map((r) => r.thang_ke_hoach).filter(Boolean))].sort();
-    select.innerHTML = '<option value="">Tất cả tháng</option>' +
-      months.map((m) => `<option value="${m}">${m}</option>`).join("");
-  }
-
-  // ---------- Rendering ----------
-  document.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      activeTab = btn.dataset.tab;
-      document.getElementById("month-filter").style.display =
-        activeTab === "sale_target" ? "inline-block" : "none";
-      renderTable();
-    });
-  });
-
-  document.getElementById("search-box").addEventListener("input", renderTable);
-  document.getElementById("month-filter").addEventListener("change", renderTable);
-
-  function fmtNum(v) {
-    if (v === null || v === undefined || v === "") return "";
-    const n = Number(v);
-    if (Number.isNaN(n)) return v;
-    return n.toLocaleString("vi-VN");
-  }
-
-  function renderTable() {
-    const columns = activeTab === "sale_target" ? SALE_TARGET_COLUMNS : CATALOG_COLUMNS;
-    let rows = currentData[activeTab] || [];
-
-    const q = document.getElementById("search-box").value.trim().toLowerCase();
-    if (q) {
-      rows = rows.filter((r) =>
-        columns.some(([key]) => String(r[key] ?? "").toLowerCase().includes(q))
-      );
-    }
-
-    if (activeTab === "sale_target") {
-      const month = document.getElementById("month-filter").value;
-      if (month) rows = rows.filter((r) => r.thang_ke_hoach === month);
-    }
-
-    document.getElementById("meta-row").innerHTML =
-      `<span class="badge">${rows.length.toLocaleString("vi-VN")} dòng</span>`;
-
-    const container = document.getElementById("table-container");
-    if (!rows.length) {
-      container.innerHTML = '<div class="empty">Không có dữ liệu phù hợp.</div>';
-      return;
-    }
-
-    const thead = "<thead><tr>" +
-      columns.map(([, label]) => `<th>${label}</th>`).join("") + "</tr></thead>";
-
-    const bodyRows = rows.slice(0, 2000).map((r) => {
-      const cells = columns.map(([key, , type]) => {
-        const val = type === "num" ? fmtNum(r[key]) : (r[key] ?? "");
-        return `<td class="${type === "num" ? "num" : ""}">${val}</td>`;
-      }).join("");
-      return `<tr>${cells}</tr>`;
-    }).join("");
-
-    container.innerHTML = `<table>${thead}<tbody>${bodyRows}</tbody></table>`;
-
-    if (rows.length > 2000) {
-      container.innerHTML += `<div class="meta-row" style="padding:8px 10px">Hiển thị 2.000/${rows.length.toLocaleString("vi-VN")} dòng — thu hẹp bằng tìm kiếm hoặc lọc tháng.</div>`;
-    }
-  }
-
-  // ---------- Bootstrap ----------
-  (function init() {
-    const session = getSession();
-    if (session) showApp(session);
-  })();
+  }, 5000);
 </script>
+<script>
+try {
+const {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback
+} = React;
+console.log('[boot] script start');
 
+// ============ ICONS ============
+const Ic = paths => ({
+  size = 16,
+  className = '',
+  ...rest
+}) => React.createElement('svg', {
+  xmlns: 'http://www.w3.org/2000/svg',
+  width: size,
+  height: size,
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 2,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+  className,
+  ...rest
+}, paths.map((d, i) => React.createElement('path', {
+  key: i,
+  d
+})));
+const Search = Ic(['m21 21-4.34-4.34', 'M11 17a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z']);
+const Download = Ic(['M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4', 'M7 10l5 5 5-5', 'M12 15V3']);
+const Check = Ic(['M20 6 9 17l-5-5']);
+const Loader2 = Ic(['M21 12a9 9 0 1 1-6.219-8.56']);
+const AlertCircle = Ic(['M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z', 'M12 8v4', 'M12 16h.01']);
+const ChevronDown = Ic(['m6 9 6 6 6-6']);
+const ChevronRight = Ic(['m9 6 6 6-6 6']);
+const RefreshCw = Ic(['M3 12a9 9 0 0 1 15-6.7L21 8', 'M21 3v5h-5', 'M21 12a9 9 0 0 1-15 6.7L3 16', 'M3 21v-5h5']);
+const LockIcon = Ic(['M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z', 'M7 11V7a5 5 0 0 1 10 0v4']);
+const LogOut = Ic(['M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4', 'm16 17 5-5-5-5', 'M21 12H9']);
+const User = Ic(['M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2', 'M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z']);
+const Package = Ic(['m7.5 4.27 9 5.15', 'M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z', 'M3.27 6.96 12 12.01l8.73-5.05', 'M12 22.08V12']);
+const Eye = Ic(['M2.06 12.35a1 1 0 0 1 0-.7 10.5 10.5 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.5 10.5 0 0 1-19.88 0Z', 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z']);
+const EyeOff = Ic(['M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68', 'M6.61 6.61A13.5 13.5 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61', 'M14.12 14.12A3 3 0 1 1 9.88 9.88', 'm2 2 20 20']);
+
+// ============ CONSTANTS ============
+const MONTHS = ['2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09', '2026-10', '2026-11', '2026-12', '2027-01', '2027-02', '2027-03'];
+const MONTH_LABELS = ['T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12', 'T1', 'T2', 'T3'];
+const CURRENT_MONTH = '2026-06'; // ← đổi mỗi tháng để khoá các tháng trước
+const CURRENT_MONTH_IDX = MONTHS.indexOf(CURRENT_MONTH);
+const NOTE_MONTH = MONTHS[Math.max(0, CURRENT_MONTH_IDX - 1)]; // giải trình lưu vào tháng hiện tại − 1
+const TOK_KEY = 'sp_tok';
+const ROLE_LABELS = {
+  admin: 'Quản trị',
+  manager: 'Quản lý',
+  area_manager: 'Quản lý miền',
+  product_manager: 'Quản lý ngành hàng',
+  ps: 'Sale (PS)'
+};
+
+// ============ HELPERS ============
+const fmtFull = v => v == null || v === '' ? '' : typeof v === 'number' ? v.toLocaleString('vi-VN') : v;
+const fmtInt = v => {
+  if (!v && v !== 0) return '—';
+  if (v === 0) return '·';
+  return Math.round(v).toLocaleString('vi-VN');
+};
+const fmtM = v => {
+  if (!v) return '—';
+  const m = v / 1e6;
+  if (Math.abs(m) >= 1000) return Math.round(m).toLocaleString('vi-VN');
+  if (Math.abs(m) >= 100) return m.toFixed(0);
+  if (Math.abs(m) >= 10) return m.toFixed(1);
+  return m.toFixed(2);
+};
+const fmtShort = v => {
+  if (!v && v !== 0) return '—';
+  const n = Math.abs(v);
+  if (n >= 1e9) return (v / 1e9).toFixed(2) + 'tỷ';
+  if (n >= 1e6) return (v / 1e6).toFixed(1) + 'tr';
+  if (n >= 1e3) return (v / 1e3).toFixed(0) + 'k';
+  return String(v);
+};
+const parseNum = s => {
+  if (s === '' || s == null) return 0;
+  const n = Number(String(s).replace(/[^\d.-]/g, ''));
+  return isNaN(n) ? 0 : n;
+};
+
+// Ẩn/hiện doanh thu (bảo mật). App set giá trị này đầu mỗi lần render.
+let MASK_MONEY = false;
+const money = v => MASK_MONEY ? '•••' : fmtM(v);
+const moneyShort = v => MASK_MONEY ? '•••' : fmtShort(v);
+const moneyPrice = v => MASK_MONEY ? '•••' : !v ? '—' : (v / 1e6).toLocaleString('vi-VN', {
+  minimumFractionDigits: 3,
+  maximumFractionDigits: 3
+}); // đơn giá: triệu VND, 3 số lẻ
+// DThu: >=1 tỷ → hiện theo tỷ (3 số thập phân); <1 tỷ → hiện theo triệu (0 số thập phân)
+// vi-VN: dấu phẩy ngăn thập phân, dấu chấm ngăn hàng nghìn
+const fmtTy3 = v => {
+  const n = Math.abs(v);
+  if (n >= 1e9) return (v / 1e9).toLocaleString('vi-VN', {
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3
+  }) + 'tỷ';
+  return (v / 1e6).toLocaleString('vi-VN', {
+    maximumFractionDigits: 0
+  }) + 'tr';
+};
+const moneyTy3 = v => MASK_MONEY ? '•••' : !v ? '—' : fmtTy3(v);
+// (đơn giá mới đã bỏ; DT = SL × đơn giá cũ)
+
+// ============ API (Supabase Edge Functions) ============
+const SUPABASE_URL = "https://nrfxymnfmjhbsgpipvkb.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yZnh5bW5mbWpoYnNncGlwdmtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4ODk2OTQsImV4cCI6MjA5ODQ2NTY5NH0.cN-jTdPOLWKd9kNa1nNMENzHcY0_BftyYgPEbuVTWeo";
+const FN_LOGIN = SUPABASE_URL + "/functions/v1/login";
+const FN_API = SUPABASE_URL + "/functions/v1/api";
+
+async function api(action, payload = {}) {
+  const token = sessionStorage.getItem(TOK_KEY) || '';
+  const isLogin = action === 'login';
+  const url = isLogin ? FN_LOGIN : FN_API;
+  const bodyObj = isLogin ? payload : { action, token, payload };
+  let data;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify(bodyObj)
+    });
+    data = await res.json();
+  } catch (e) {
+    throw new Error('Không kết nối được máy chủ: ' + (e && e.message || e));
+  }
+  if (!data || !data.ok) {
+    if (data && data.error === 'unauthorized') sessionStorage.removeItem(TOK_KEY);
+    throw new Error(data && data.error || 'unknown');
+  }
+  return data;
+}
+
+// ============ ERROR BOUNDARY ============
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      error: null
+    };
+  }
+  static getDerivedStateFromError(error) {
+    return {
+      error
+    };
+  }
+  componentDidCatch(error, info) {
+    console.error('[react error]', error, info);
+  }
+  render() {
+    if (this.state.error) {
+      return React.createElement('div', {
+        style: {
+          padding: 24,
+          fontFamily: 'monospace',
+          background: '#fef2f2',
+          minHeight: '100vh'
+        }
+      }, React.createElement('h2', {
+        style: {
+          color: '#991b1b',
+          marginTop: 0
+        }
+      }, '⚠ Lỗi UI'), React.createElement('pre', {
+        style: {
+          whiteSpace: 'pre-wrap',
+          color: '#7f1d1d',
+          background: '#fff',
+          padding: 12,
+          borderRadius: 6,
+          fontSize: 12
+        }
+      }, String(this.state.error.stack || this.state.error)), React.createElement('button', {
+        onClick: () => location.reload(),
+        style: {
+          marginTop: 12,
+          padding: '8px 16px',
+          background: '#dc2626',
+          color: '#fff',
+          border: 'none',
+          borderRadius: 6,
+          cursor: 'pointer'
+        }
+      }, 'Tải lại trang'));
+    }
+    return this.props.children;
+  }
+}
+
+// ============ LOGIN GATE ============
+function LoginGate({
+  onAuth
+}) {
+  const [username, setUsername] = useState('');
+  const [pw, setPw] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const submit = async e => {
+    if (e) e.preventDefault();
+    if (!username || !pw) return;
+    setBusy(true);
+    setError('');
+    try {
+      const res = await api('login', {
+        username,
+        password: pw
+      });
+      sessionStorage.setItem(TOK_KEY, res.token);
+      onAuth({
+        role: res.role,
+        scope: res.scope,
+        username: res.username
+      });
+    } catch (err) {
+      setError(err.message === 'unauthorized' ? 'Phiên hết hạn' : err.message);
+    }
+    setBusy(false);
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: '#f1f5f9',
+      padding: 16
+    }
+  }, /*#__PURE__*/React.createElement("form", {
+    onSubmit: submit,
+    style: {
+      background: '#fff',
+      borderRadius: 12,
+      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+      border: '1px solid #e2e8f0',
+      padding: 24,
+      width: '100%',
+      maxWidth: 360
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 48,
+      height: 48,
+      borderRadius: 8,
+      background: 'linear-gradient(to bottom right, #10b981, #0d9488)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: '#fff',
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement(LockIcon, {
+    size: 20
+  })), /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontSize: 18,
+      fontWeight: 600,
+      margin: 0
+    }
+  }, "Kế hoạch kinh doanh FY26"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      color: '#64748b',
+      marginTop: 4,
+      marginBottom: 20
+    }
+  }, "Đăng nhập để truy cập"), /*#__PURE__*/React.createElement("input", {
+    autoFocus: true,
+    value: username,
+    onChange: e => setUsername(e.target.value),
+    placeholder: "Tài khoản",
+    style: {
+      width: '100%',
+      padding: '8px 12px',
+      border: '1px solid #e2e8f0',
+      borderRadius: 6,
+      fontSize: 14,
+      outline: 'none',
+      boxSizing: 'border-box',
+      marginBottom: 10
+    }
+  }), /*#__PURE__*/React.createElement("input", {
+    type: "password",
+    value: pw,
+    onChange: e => setPw(e.target.value),
+    placeholder: "Mật khẩu",
+    style: {
+      width: '100%',
+      padding: '8px 12px',
+      border: '1px solid #e2e8f0',
+      borderRadius: 6,
+      fontSize: 14,
+      outline: 'none',
+      boxSizing: 'border-box'
+    }
+  }), error && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 12,
+      fontSize: 12,
+      color: '#dc2626',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6
+    }
+  }, /*#__PURE__*/React.createElement(AlertCircle, {
+    size: 12
+  }), " ", error), /*#__PURE__*/React.createElement("button", {
+    disabled: busy || !username || !pw,
+    style: {
+      width: '100%',
+      marginTop: 16,
+      background: busy || !username || !pw ? '#cbd5e1' : '#059669',
+      color: '#fff',
+      padding: '8px 12px',
+      borderRadius: 6,
+      fontSize: 14,
+      fontWeight: 500,
+      border: 'none',
+      cursor: busy || !username || !pw ? 'not-allowed' : 'pointer'
+    }
+  }, busy ? 'Đang xác thực…' : 'Đăng nhập')));
+}
+
+// ============ EDITABLE CELL ============
+// type: 'int' | 'price' | 'text'
+function EditableCell({
+  value,
+  pending,
+  onCommit,
+  locked,
+  width = 64,
+  type = 'int',
+  bg = ''
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const inputRef = useRef(null);
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editing]);
+  let display;
+  if (type === 'text') display = value || '·';else if (type === 'price') display = fmtM(value);else display = value ? fmtInt(value) : '·';
+
+  // Locked (past month) → readonly, no click
+  if (locked) {
+    return /*#__PURE__*/React.createElement("td", {
+      className: `px-1.5 py-1.5 text-[12px] text-right tabular-nums border-r border-b border-slate-100 bg-slate-100/70 text-slate-400 cursor-not-allowed select-none ${bg}`,
+      style: {
+        width,
+        minWidth: width
+      },
+      title: "Tháng đã qua — không sửa được"
+    }, display);
+  }
+  if (editing) {
+    const commit = () => {
+      const nv = type === 'text' ? draft.trim() : parseNum(draft);
+      if (nv !== value) onCommit(nv);
+      setEditing(false);
+    };
+    return /*#__PURE__*/React.createElement("td", {
+      className: "p-0 border-r border-b border-slate-100",
+      style: {
+        width,
+        minWidth: width
+      }
+    }, /*#__PURE__*/React.createElement("input", {
+      ref: inputRef,
+      value: draft,
+      onChange: e => setDraft(e.target.value),
+      onBlur: commit,
+      onKeyDown: e => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          commit();
+        } else if (e.key === 'Escape') setEditing(false);
+      },
+      className: `w-full h-full px-1.5 py-1.5 text-[12px] outline-none ring-2 ring-emerald-500 ring-inset bg-white tabular-nums ${type === 'text' ? 'text-left' : 'text-right'}`
+    }));
+  }
+  return /*#__PURE__*/React.createElement("td", {
+    onClick: () => {
+      setDraft(value == null ? '' : value);
+      setEditing(true);
+    },
+    className: `px-1.5 py-1.5 text-[12px] tabular-nums cursor-text border-r border-b border-slate-100 ${type === 'text' ? 'text-left' : 'text-right'} ${pending ? 'bg-amber-50 text-amber-900 font-semibold' : value ? 'text-slate-900 hover:bg-emerald-50/50' : 'text-slate-300 hover:bg-emerald-50/30'} ${bg}`,
+    style: {
+      width,
+      minWidth: width
+    },
+    title: fmtFull(value)
+  }, display, pending && /*#__PURE__*/React.createElement("span", {
+    className: "ml-0.5 inline-block w-1 h-1 rounded-full bg-amber-500 align-middle"
+  }));
+}
+
+// ============ PRODUCT ROW ============
+// monthly[i] = { rev, dt, revUpd, hasUpd, rows: [...] }
+function ProductRow({
+  product,
+  mset,
+  showMset,
+  monthly,
+  pendingKeys,
+  onCommit,
+  canEdit
+}) {
+  const allRows = useMemo(() => monthly.flatMap(c => c.rows), [monthly]);
+  const anchor = allRows.length ? allRows[0] : null;
+  const stats = useMemo(() => {
+    let q14 = 0,
+      qMain = 0,
+      qAdd = 0,
+      mMain = '',
+      mAdd = '',
+      price = 0;
+    allRows.forEach(r => {
+      q14 += Number(r.qOld) || 0;
+      qMain += Number(r.qMain) || 0;
+      qAdd += Number(r.qAdd) || 0;
+      if (!mMain && r.mMain) mMain = r.mMain;
+      if (!mAdd && r.mAdd) mAdd = r.mAdd;
+      if (!price && r.price) price = Number(r.price) || 0; // hiển thị đơn giá đại diện
+    });
+    let revBase = 0,
+      revUpd = 0,
+      ytd = 0,
+      dtBase = 0,
+      dtUpd = 0;
+    monthly.forEach((c, i) => {
+      revBase += c.rev;
+      const past = MONTHS[i] < CURRENT_MONTH;
+      revUpd += past ? c.act : c.hasUpd ? c.revUpd : c.rev;
+      if (past) ytd += c.act; // Thực hiện YTD = tổng SL thực hiện các tháng đã qua
+      // doanh thu tính theo ĐƠN GIÁ TỪNG DÒNG
+      c.rows.forEach(r => {
+        const pr = Number(r.price) || 0;
+        dtBase += (Number(r.rev) || 0) * pr;
+        const upd = past ? Number(r.act) || 0 : r.revUpd !== undefined && r.revUpd !== '' && r.revUpd !== null ? Number(r.revUpd) || 0 : Number(r.rev) || 0;
+        dtUpd += upd * pr;
+      });
+    });
+    const totalQuotaFY = q14 + qMain + qAdd;
+    return {
+      q14,
+      mMain,
+      qMain,
+      mAdd,
+      qAdd,
+      ytd,
+      price,
+      totalQuotaFY,
+      quotaAvailable: totalQuotaFY - ytd,
+      dtBase,
+      dtUpd,
+      chenh: dtBase - dtUpd
+    };
+  }, [allRows, monthly]);
+  const commitProductField = (key, value, isText = false) => {
+    if (!anchor) return;
+    const updates = [{
+      row: anchor._row,
+      key,
+      value
+    }];
+    allRows.forEach(r => {
+      if (r._row !== anchor._row) updates.push({
+        row: r._row,
+        key,
+        value: isText ? '' : 0
+      });
+    });
+    onCommit(updates);
+  };
+
+  // edit SL update cell → write revUpd to first row, zero others
+  const commitRevUpd = (monthIdx, newVal) => {
+    const cell = monthly[monthIdx];
+    if (!cell || cell.rows.length === 0) return;
+    const updates = [];
+    cell.rows.forEach((r, j) => updates.push({
+      row: r._row,
+      key: 'revUpd',
+      value: j === 0 ? newVal : 0
+    }));
+    onCommit(updates);
+  };
+  const pend = key => allRows.some(r => pendingKeys.has(`${r._row}:${key}`));
+  const pendUpd = cell => cell.rows.some(r => pendingKeys.has(`${r._row}:revUpd`));
+  return /*#__PURE__*/React.createElement("tr", {
+    className: "group hover:bg-slate-50/40"
+  }, /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-1.5 text-[11.5px] text-slate-500 border-r border-b border-slate-100 sticky left-0 bg-white group-hover:bg-slate-50/40 z-[1]",
+    style: {
+      width: 180,
+      minWidth: 180,
+      maxWidth: 180
+    }
+  }, showMset ? /*#__PURE__*/React.createElement("div", {
+    className: "truncate",
+    title: mset
+  }, mset) : /*#__PURE__*/React.createElement("span", {
+    className: "text-slate-300"
+  }, "›")), /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-1.5 text-[12px] text-slate-800 border-r border-b border-slate-100 sticky bg-white group-hover:bg-slate-50/40 z-[1] font-medium",
+    style: {
+      width: 220,
+      minWidth: 220,
+      maxWidth: 220,
+      left: 180
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "truncate",
+    title: product
+  }, product)), /*#__PURE__*/React.createElement(EditableCell, {
+    value: stats.q14,
+    pending: pend('qOld'),
+    locked: !canEdit,
+    onCommit: v => commitProductField('qOld', v),
+    width: 72,
+    bg: "bg-blue-50/20"
+  }), /*#__PURE__*/React.createElement(EditableCell, {
+    value: stats.mMain,
+    pending: pend('mMain'),
+    locked: !canEdit,
+    onCommit: v => commitProductField('mMain', v, true),
+    width: 70,
+    type: "text",
+    bg: "bg-blue-50/20"
+  }), /*#__PURE__*/React.createElement(EditableCell, {
+    value: stats.qMain,
+    pending: pend('qMain'),
+    locked: !canEdit,
+    onCommit: v => commitProductField('qMain', v),
+    width: 80,
+    bg: "bg-blue-50/20"
+  }), /*#__PURE__*/React.createElement(EditableCell, {
+    value: stats.mAdd,
+    pending: pend('mAdd'),
+    locked: !canEdit,
+    onCommit: v => commitProductField('mAdd', v, true),
+    width: 70,
+    type: "text",
+    bg: "bg-blue-50/20"
+  }), /*#__PURE__*/React.createElement(EditableCell, {
+    value: stats.qAdd,
+    pending: pend('qAdd'),
+    locked: !canEdit,
+    onCommit: v => commitProductField('qAdd', v),
+    width: 72,
+    bg: "bg-blue-50/20"
+  }), /*#__PURE__*/React.createElement("td", {
+    className: "px-2 py-1.5 text-[12px] text-right tabular-nums text-slate-700 font-medium border-r border-b border-slate-100 bg-slate-50/60",
+    style: {
+      width: 90
+    }
+  }, fmtInt(stats.totalQuotaFY)), /*#__PURE__*/React.createElement("td", {
+    className: "px-2 py-1.5 text-[12px] text-right tabular-nums text-slate-600 border-r border-b border-slate-100 bg-orange-50/40",
+    style: {
+      width: 90
+    }
+  }, fmtInt(stats.ytd)), /*#__PURE__*/React.createElement("td", {
+    className: "px-2 py-1.5 text-[12px] text-right tabular-nums text-slate-700 font-medium border-r border-b border-slate-100 bg-slate-50/60",
+    style: {
+      width: 95
+    }
+  }, fmtInt(stats.quotaAvailable)), /*#__PURE__*/React.createElement("td", {
+    className: "px-2 py-1.5 text-[12px] text-right tabular-nums text-slate-700 font-medium border-r border-b border-slate-100 bg-amber-50/40",
+    style: {
+      width: 85
+    }
+  }, moneyPrice(stats.price)), MONTHS.map((mo, i) => /*#__PURE__*/React.createElement(EditableCell, {
+    key: 'b' + mo,
+    value: monthly[i].rev,
+    locked: true,
+    width: 58,
+    bg: "bg-slate-50/40"
+  })), /*#__PURE__*/React.createElement("td", {
+    className: "px-2 py-1.5 text-[12px] text-right tabular-nums font-semibold text-slate-800 border-r border-b border-slate-100 bg-slate-100/70",
+    style: {
+      width: 100
+    }
+  }, moneyTy3(stats.dtBase)), MONTHS.map((mo, i) => {
+    const cell = monthly[i];
+    const isPast = mo < CURRENT_MONTH;
+    if (isPast) {
+      return /*#__PURE__*/React.createElement(EditableCell, {
+        key: 'u' + mo,
+        value: cell.act,
+        locked: true,
+        width: 58,
+        bg: "bg-teal-50/50"
+      });
+    }
+    const eff = cell.hasUpd ? cell.revUpd : cell.rev;
+    const locked = cell.rows.length === 0 || !canEdit;
+    return /*#__PURE__*/React.createElement(EditableCell, {
+      key: 'u' + mo,
+      value: eff,
+      pending: pendUpd(cell),
+      locked: locked,
+      width: 58,
+      bg: mo === CURRENT_MONTH ? 'bg-blue-100/50' : 'bg-blue-50/30',
+      onCommit: nv => commitRevUpd(i, nv)
+    });
+  }), /*#__PURE__*/React.createElement("td", {
+    className: "px-2 py-1.5 text-[12px] text-right tabular-nums font-semibold text-slate-900 border-r border-b border-slate-100 bg-blue-50/40",
+    style: {
+      width: 100
+    }
+  }, moneyTy3(stats.dtUpd)), /*#__PURE__*/React.createElement("td", {
+    className: `px-2 py-1.5 text-[12px] text-right tabular-nums font-semibold border-b border-slate-100 ${stats.chenh > 0 ? 'text-red-600 bg-red-50/40' : stats.chenh < 0 ? 'text-emerald-700 bg-emerald-50/40' : 'text-slate-400'}`,
+    style: {
+      width: 110
+    }
+  }, stats.chenh === 0 ? '—' : MASK_MONEY ? '•••' : (stats.chenh > 0 ? '+' : '') + fmtTy3(stats.chenh)));
+}
+
+// ============ PRODUCT GROUP (Nhóm SP) — 1 bảng, Bộ vật tư là cột ============
+function ProductGroupSection({
+  groupName,
+  ps,
+  note,
+  aprRow,
+  products,
+  pendingKeys,
+  onCommit,
+  canEdit
+}) {
+  const [open, setOpen] = useState(false);
+  const [noteDraft, setNoteDraft] = useState(note || '');
+  useEffect(() => {
+    setNoteDraft(note || '');
+  }, [note]);
+  const notePending = aprRow != null && pendingKeys.has(`${aprRow}:note`);
+  const saveNote = () => {
+    if (aprRow != null && noteDraft !== (note || '')) onCommit([{
+      row: aprRow,
+      key: 'note',
+      value: noteDraft
+    }]);
+  };
+  // thống kê cấp nhóm SP
+  const gs = useMemo(() => {
+    let plan = 0,
+      dt = 0,
+      dtUpd = 0;
+    products.forEach(p => {
+      p.monthly.forEach((c, i) => {
+        plan += c.rev;
+        const past = MONTHS[i] < CURRENT_MONTH;
+        c.rows.forEach(r => {
+          const pr = Number(r.price) || 0;
+          dt += (Number(r.rev) || 0) * pr;
+          const upd = past ? Number(r.act) || 0 : r.revUpd !== undefined && r.revUpd !== '' && r.revUpd !== null ? Number(r.revUpd) || 0 : Number(r.rev) || 0;
+          dtUpd += upd * pr;
+        });
+      });
+    });
+    return {
+      plan,
+      dt,
+      dtUpd,
+      chenh: dt - dtUpd
+    };
+  }, [products]);
+  // products: [{ mset, product, monthly }], đã sort theo mset → product
+  return /*#__PURE__*/React.createElement("div", {
+    className: "border-t border-slate-200"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setOpen(!open),
+    className: "w-full flex items-center gap-2 px-4 py-2 bg-slate-100/70 hover:bg-slate-100 text-left"
+  }, open ? /*#__PURE__*/React.createElement(ChevronDown, {
+    size: 14,
+    className: "text-slate-600"
+  }) : /*#__PURE__*/React.createElement(ChevronRight, {
+    size: 14,
+    className: "text-slate-600"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-[12.5px] font-semibold text-slate-800"
+  }, groupName), /*#__PURE__*/React.createElement("span", {
+    className: "text-[11px] text-slate-500"
+  }, "· ", products.length, " SP"), ps && /*#__PURE__*/React.createElement("span", {
+    className: "text-[10.5px] font-medium text-sky-700 bg-sky-50 border border-sky-200 rounded px-1.5 py-0.5"
+  }, "PS: ", ps), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "hidden md:flex items-center gap-4 flex-shrink-0 pr-1"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-right"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[9px] uppercase tracking-wide text-slate-400"
+  }, "SL kế hoạch"), /*#__PURE__*/React.createElement("div", {
+    className: "text-[12px] font-semibold tabular-nums text-slate-700"
+  }, fmtInt(gs.plan))), /*#__PURE__*/React.createElement("div", {
+    className: "text-right"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[9px] uppercase tracking-wide text-slate-400"
+  }, "DThu đầu năm"), /*#__PURE__*/React.createElement("div", {
+    className: "text-[12px] font-semibold tabular-nums text-slate-700"
+  }, moneyTy3(gs.dt))), /*#__PURE__*/React.createElement("div", {
+    className: "text-right"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[9px] uppercase tracking-wide text-slate-400"
+  }, "DThu update"), /*#__PURE__*/React.createElement("div", {
+    className: "text-[12px] font-semibold tabular-nums text-blue-700"
+  }, moneyTy3(gs.dtUpd))), /*#__PURE__*/React.createElement("div", {
+    className: "text-right min-w-[64px]"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[9px] uppercase tracking-wide text-slate-400"
+  }, "Chênh lệch"), /*#__PURE__*/React.createElement("div", {
+    className: `text-[12px] font-semibold tabular-nums ${gs.chenh > 0 ? 'text-red-600' : gs.chenh < 0 ? 'text-emerald-700' : 'text-slate-400'}`
+  }, gs.chenh === 0 ? '—' : MASK_MONEY ? '•••' : (gs.chenh > 0 ? '+' : '') + fmtTy3(gs.chenh))))), open && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "px-4 py-2 bg-amber-50/40 border-b border-amber-100 flex items-start gap-2"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-[10.5px] font-semibold text-amber-800 uppercase tracking-wide pt-1.5 flex-shrink-0"
+  }, "Giải trình"), /*#__PURE__*/React.createElement("textarea", {
+    value: noteDraft,
+    onChange: e => setNoteDraft(e.target.value),
+    onBlur: saveNote,
+    disabled: !canEdit,
+    placeholder: canEdit ? `Giải trình cho nhóm ${groupName} (lý do điều chỉnh / chênh lệch)…` : "(chỉ xem)",
+    rows: 1,
+    className: `flex-1 text-[12px] px-2.5 py-1.5 rounded-md border outline-none resize-y min-h-[32px] ${notePending ? 'border-amber-400 bg-amber-50 ring-1 ring-amber-200' : 'border-slate-200 bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100'}`
+  }), notePending && /*#__PURE__*/React.createElement("span", {
+    className: "text-[10px] text-amber-600 pt-2 flex-shrink-0"
+  }, "chưa lưu")), /*#__PURE__*/React.createElement("div", {
+    className: "overflow-x-auto scroll-shadow"
+  }, /*#__PURE__*/React.createElement("table", {
+    className: "border-collapse",
+    style: {
+      tableLayout: 'fixed'
+    }
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
+    className: "bg-white"
+  }, /*#__PURE__*/React.createElement("th", {
+    rowSpan: 2,
+    className: "px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-500 border-r border-b border-slate-200 sticky left-0 bg-white z-[2] align-bottom",
+    style: {
+      width: 180
+    }
+  }, "Bộ vật tư"), /*#__PURE__*/React.createElement("th", {
+    rowSpan: 2,
+    className: "px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-500 border-r border-b border-slate-200 sticky bg-white z-[2] align-bottom",
+    style: {
+      width: 220,
+      left: 180
+    }
+  }, "Sản phẩm"), /*#__PURE__*/React.createElement("th", {
+    rowSpan: 2,
+    className: "px-1.5 py-1.5 text-right text-[10px] font-semibold uppercase text-blue-700 border-r border-b border-slate-200 bg-blue-50/40 align-bottom",
+    style: {
+      width: 72
+    }
+  }, "Quota 1/4 ✏"), /*#__PURE__*/React.createElement("th", {
+    rowSpan: 2,
+    className: "px-1.5 py-1.5 text-left text-[10px] font-semibold uppercase text-blue-700 border-r border-b border-slate-200 bg-blue-50/40 align-bottom",
+    style: {
+      width: 70
+    }
+  }, "Th.thầu chính ✏"), /*#__PURE__*/React.createElement("th", {
+    rowSpan: 2,
+    className: "px-1.5 py-1.5 text-right text-[10px] font-semibold uppercase text-blue-700 border-r border-b border-slate-200 bg-blue-50/40 align-bottom",
+    style: {
+      width: 80
+    }
+  }, "Quota thầu chính ✏"), /*#__PURE__*/React.createElement("th", {
+    rowSpan: 2,
+    className: "px-1.5 py-1.5 text-left text-[10px] font-semibold uppercase text-blue-700 border-r border-b border-slate-200 bg-blue-50/40 align-bottom",
+    style: {
+      width: 70
+    }
+  }, "Th.thầu BS ✏"), /*#__PURE__*/React.createElement("th", {
+    rowSpan: 2,
+    className: "px-1.5 py-1.5 text-right text-[10px] font-semibold uppercase text-blue-700 border-r border-b border-slate-200 bg-blue-50/40 align-bottom",
+    style: {
+      width: 72
+    }
+  }, "Quota BS ✏"), /*#__PURE__*/React.createElement("th", {
+    rowSpan: 2,
+    className: "px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wide text-slate-500 border-r border-b border-slate-200 align-bottom",
+    style: {
+      width: 90
+    }
+  }, "Tổng Quota FY"), /*#__PURE__*/React.createElement("th", {
+    rowSpan: 2,
+    className: "px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wide text-orange-700 border-r border-b border-slate-200 bg-orange-50/40 align-bottom",
+    style: {
+      width: 90
+    }
+  }, "Thực hiện YTD"), /*#__PURE__*/React.createElement("th", {
+    rowSpan: 2,
+    className: "px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wide text-slate-500 border-r border-b border-slate-200 align-bottom",
+    style: {
+      width: 95
+    }
+  }, "Quota khả dụng"), /*#__PURE__*/React.createElement("th", {
+    rowSpan: 2,
+    className: "px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wide text-amber-700 border-r border-b border-slate-200 bg-amber-50/40 align-bottom",
+    style: {
+      width: 85
+    }
+  }, "Đơn giá"), /*#__PURE__*/React.createElement("th", {
+    colSpan: 12,
+    className: "px-2 py-1 text-center text-[10px] font-bold uppercase tracking-wide text-slate-600 border-r border-b border-slate-200 bg-slate-100/70"
+  }, "SL Kế hoạch đầu năm (cố định)"), /*#__PURE__*/React.createElement("th", {
+    rowSpan: 2,
+    className: "px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wide text-slate-700 border-r border-b border-slate-200 bg-slate-100/70 align-bottom",
+    style: {
+      width: 100
+    }
+  }, "DThu KH đầu năm"), /*#__PURE__*/React.createElement("th", {
+    colSpan: 12,
+    className: "px-2 py-1 text-center text-[10px] font-bold uppercase tracking-wide text-blue-700 border-r border-b border-slate-200 bg-blue-50/50"
+  }, "SL update (quá khứ = thực hiện · từ tháng này = điều chỉnh ✏)"), /*#__PURE__*/React.createElement("th", {
+    rowSpan: 2,
+    className: "px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wide text-blue-800 border-r border-b border-slate-200 bg-blue-50/50 align-bottom",
+    style: {
+      width: 100
+    }
+  }, "DThu KH Update"), /*#__PURE__*/React.createElement("th", {
+    rowSpan: 2,
+    className: "px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wide text-red-700 border-b border-slate-200 bg-red-50/30 align-bottom",
+    style: {
+      width: 110
+    }
+  }, "Chênh lệch DT KH")), /*#__PURE__*/React.createElement("tr", {
+    className: "bg-white"
+  }, MONTH_LABELS.map((m, i) => /*#__PURE__*/React.createElement("th", {
+    key: 'bh' + m,
+    className: `px-1 py-1 text-[10px] font-semibold uppercase border-r border-b border-slate-200 text-right text-slate-400 bg-slate-50/40`,
+    style: {
+      width: 58
+    }
+  }, m)), MONTH_LABELS.map((m, i) => /*#__PURE__*/React.createElement("th", {
+    key: 'uh' + m,
+    className: `px-1 py-1 text-[10px] font-semibold uppercase border-r border-b border-slate-200 text-right ${MONTHS[i] < CURRENT_MONTH ? 'bg-teal-50/50 text-teal-700' : MONTHS[i] === CURRENT_MONTH ? 'bg-blue-100/50 text-blue-700' : 'text-blue-600 bg-blue-50/30'}`,
+    style: {
+      width: 58
+    }
+  }, m)))), /*#__PURE__*/React.createElement("tbody", null, products.map((p, idx) => {
+    const showMset = idx === 0 || products[idx - 1].mset !== p.mset;
+    return /*#__PURE__*/React.createElement(ProductRow, {
+      key: p.mset + '||' + p.product,
+      product: p.product,
+      mset: p.mset,
+      showMset: showMset,
+      monthly: p.monthly,
+      pendingKeys: pendingKeys,
+      onCommit: onCommit,
+      canEdit: canEdit
+    });
+  }))))));
+}
+
+// ============ SPARKLINE ============
+function Sparkline({
+  values,
+  color = '#0d9488',
+  width = 90,
+  height = 22
+}) {
+  if (!values?.length) return null;
+  const max = Math.max(...values, 1),
+    min = Math.min(...values, 0);
+  const range = max - min || 1;
+  const step = width / Math.max(1, values.length - 1);
+  const points = values.map((v, i) => `${i * step},${height - (v - min) / range * (height - 2) - 1}`).join(' ');
+  return /*#__PURE__*/React.createElement("svg", {
+    width: width,
+    height: height
+  }, /*#__PURE__*/React.createElement("polyline", {
+    points: points,
+    fill: "none",
+    stroke: color,
+    strokeWidth: "1.5",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }));
+}
+
+// ============ CUSTOMER CARD ============
+function CustomerCard({
+  customer,
+  custId,
+  psList,
+  region,
+  groups,
+  pendingKeys,
+  onCommit,
+  onAddProduct,
+  canEdit,
+  defaultOpen
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const stats = useMemo(() => {
+    let plan = 0,
+      dt = 0,
+      dtUpd = 0;
+    const monthlyDt = Array(12).fill(0);
+    let productCount = 0;
+    groups.forEach(g => {
+      productCount += g.products.length;
+      g.products.forEach(p => {
+        p.monthly.forEach((c, i) => {
+          plan += c.rev;
+          const past = MONTHS[i] < CURRENT_MONTH;
+          c.rows.forEach(r => {
+            const pr = Number(r.price) || 0;
+            const d = (Number(r.rev) || 0) * pr;
+            dt += d;
+            monthlyDt[i] += d;
+            const upd = past ? Number(r.act) || 0 : r.revUpd !== undefined && r.revUpd !== '' && r.revUpd !== null ? Number(r.revUpd) || 0 : Number(r.rev) || 0;
+            dtUpd += upd * pr;
+          });
+        });
+      });
+    });
+    return {
+      plan,
+      dt,
+      dtUpd,
+      chenh: dt - dtUpd,
+      productCount,
+      monthlyDt
+    };
+  }, [groups]);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-lg border border-slate-200 mb-3 overflow-hidden shadow-sm"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setOpen(!open),
+    className: "w-full flex items-stretch text-left"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-gradient-to-br from-red-600 to-red-700 text-white px-3 py-3 flex flex-col items-center justify-center min-w-[88px]"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] uppercase tracking-wide opacity-80"
+  }, "KH FY26"), /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] opacity-70 mt-1 font-mono"
+  }, custId)), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 flex items-center gap-4 px-4 py-3 hover:bg-slate-50/60 min-w-0"
+  }, open ? /*#__PURE__*/React.createElement(ChevronDown, {
+    size: 16,
+    className: "text-slate-400 flex-shrink-0"
+  }) : /*#__PURE__*/React.createElement(ChevronRight, {
+    size: 16,
+    className: "text-slate-400 flex-shrink-0"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 min-w-0"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "text-[14px] font-semibold text-slate-900 truncate"
+  }, customer), /*#__PURE__*/React.createElement("p", {
+    className: "text-[11px] text-slate-500 mt-0.5"
+  }, groups.length, " nhóm SP · ", stats.productCount, " sản phẩm", psList && psList.length ? ` · ${psList.length} PS: ${psList.join(', ')}` : '')), /*#__PURE__*/React.createElement("div", {
+    className: "hidden md:flex items-center gap-5 flex-shrink-0"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-right"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] uppercase tracking-wide text-slate-400"
+  }, "SL kế hoạch"), /*#__PURE__*/React.createElement("div", {
+    className: "text-[13px] font-semibold tabular-nums text-slate-700"
+  }, fmtInt(stats.plan))), /*#__PURE__*/React.createElement("div", {
+    className: "text-right"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] uppercase tracking-wide text-slate-400"
+  }, "DThu đầu năm"), /*#__PURE__*/React.createElement("div", {
+    className: "text-[13px] font-semibold tabular-nums text-slate-700"
+  }, moneyTy3(stats.dt))), /*#__PURE__*/React.createElement("div", {
+    className: "text-right"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] uppercase tracking-wide text-slate-400"
+  }, "DThu update"), /*#__PURE__*/React.createElement("div", {
+    className: "text-[13px] font-semibold tabular-nums text-blue-700"
+  }, moneyTy3(stats.dtUpd))), /*#__PURE__*/React.createElement("div", {
+    className: "text-right min-w-[70px]"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] uppercase tracking-wide text-slate-400"
+  }, "Chênh lệch"), /*#__PURE__*/React.createElement("div", {
+    className: `text-[13px] font-semibold tabular-nums ${stats.chenh > 0 ? 'text-red-600' : stats.chenh < 0 ? 'text-emerald-700' : 'text-slate-400'}`
+  }, stats.chenh === 0 ? '—' : MASK_MONEY ? '•••' : (stats.chenh > 0 ? '+' : '') + fmtTy3(stats.chenh))), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement(Sparkline, {
+    values: stats.monthlyDt
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] text-slate-400 leading-tight"
+  }, "DThu", /*#__PURE__*/React.createElement("br", null), "12 tháng"))))), open && /*#__PURE__*/React.createElement("div", null, onAddProduct && /*#__PURE__*/React.createElement("div", {
+    className: "px-4 py-1.5 border-b border-slate-100 bg-white"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => onAddProduct({
+      customer,
+      custId,
+      ps: psList && psList[0] || '',
+      region
+    }),
+    className: "inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] text-emerald-700 hover:bg-emerald-50 rounded-md border border-emerald-200"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-[14px] leading-none"
+  }, "+"), " Thêm sản phẩm")), groups.map(g => /*#__PURE__*/React.createElement(ProductGroupSection, {
+    key: g.name,
+    groupName: g.name,
+    ps: g.ps,
+    note: g.note,
+    aprRow: g.aprRow,
+    products: g.products,
+    pendingKeys: pendingKeys,
+    onCommit: onCommit,
+    canEdit: canEdit
+  }))));
+}
+
+// ============ SUMMARY (Tổng hợp theo Miền / PS / Khách hàng) ============
+function SummaryView({
+  rows,
+  psFilter,
+  regionFilter,
+  custFilter,
+  groupFilter
+}) {
+  const data = useMemo(() => {
+    const filtered = rows.filter(r => (psFilter === 'all' || r.ps === psFilter) && (regionFilter === 'all' || r.region === regionFilter) && (custFilter === 'all' || r.cust === custFilter) && (groupFilter === 'all' || r.grp === groupFilter));
+    const regMap = new Map();
+    for (const r of filtered) {
+      const rKey = r.region || '(Không rõ miền)';
+      if (!regMap.has(rKey)) regMap.set(rKey, {
+        region: rKey,
+        psMap: new Map()
+      });
+      const reg = regMap.get(rKey);
+      const psKey = r.ps || '(Không rõ PS)';
+      if (!reg.psMap.has(psKey)) reg.psMap.set(psKey, {
+        ps: psKey,
+        custMap: new Map()
+      });
+      const ps = reg.psMap.get(psKey);
+      const cKey = r.cust || '—';
+      if (!ps.custMap.has(cKey)) ps.custMap.set(cKey, {
+        cust: cKey,
+        custId: r.custId,
+        note: '',
+        sl: 0,
+        dt: 0,
+        dtYtd: 0,
+        dtUpd: 0,
+        quotaFY: 0,
+        ytd: 0,
+        prods: new Set()
+      });
+      const c = ps.custMap.get(cKey);
+      if (r.mo === NOTE_MONTH && r.note) c.note = r.note;
+      const price = Number(r.price) || 0; // đơn giá TỪNG DÒNG
+      const isPast = (r.mo || '') < CURRENT_MONTH;
+      const actQty = Number(r.act) || 0;
+      const updQty = isPast ? actQty : r.revUpd !== undefined && r.revUpd !== '' && r.revUpd !== null ? Number(r.revUpd) || 0 : Number(r.rev) || 0;
+      c.sl += Number(r.rev) || 0;
+      c.dt += (Number(r.rev) || 0) * price;
+      c.dtUpd += updQty * price;
+      c.quotaFY += (Number(r.qOld) || 0) + (Number(r.qMain) || 0) + (Number(r.qAdd) || 0);
+      if (isPast) {
+        c.ytd += actQty;
+        c.dtYtd += actQty * price;
+      }
+      c.prods.add(`${r.grp}||${r.mset}||${r.prod}`);
+    }
+    const fold = () => ({
+      sl: 0,
+      dt: 0,
+      dtYtd: 0,
+      dtUpd: 0,
+      quotaFY: 0,
+      ytd: 0,
+      prodCount: 0,
+      custCount: 0
+    });
+    const add = (a, c) => {
+      a.sl += c.sl;
+      a.dt += c.dt;
+      a.dtYtd += c.dtYtd;
+      a.dtUpd += c.dtUpd;
+      a.quotaFY += c.quotaFY;
+      a.ytd += c.ytd;
+      a.prodCount += c.prodCount;
+      return a;
+    };
+    const regions = Array.from(regMap.values()).map(reg => {
+      const psList = Array.from(reg.psMap.values()).map(ps => {
+        const custs = Array.from(ps.custMap.values()).map(c => ({
+          ...c,
+          prodCount: c.prods.size,
+          quotaAvail: c.quotaFY - c.ytd
+        }));
+        custs.sort((a, b) => b.dt - a.dt);
+        const tot = custs.reduce(add, fold());
+        tot.custCount = custs.length;
+        return {
+          ps: ps.ps,
+          custs,
+          ...tot,
+          quotaAvail: tot.quotaFY - tot.ytd
+        };
+      });
+      psList.sort((a, b) => b.dt - a.dt);
+      const tot = psList.reduce((a, p) => {
+        add(a, p);
+        a.custCount += p.custCount;
+        return a;
+      }, fold());
+      return {
+        region: reg.region,
+        psList,
+        ...tot,
+        quotaAvail: tot.quotaFY - tot.ytd
+      };
+    });
+    regions.sort((a, b) => b.dt - a.dt);
+    const grand = regions.reduce((a, rg) => {
+      add(a, rg);
+      a.custCount += rg.custCount;
+      return a;
+    }, fold());
+    grand.quotaAvail = grand.quotaFY - grand.ytd;
+    return {
+      regions,
+      grand
+    };
+  }, [rows, psFilter, regionFilter, custFilter, groupFilter]);
+  const g = data.grand;
+  const chG = g.dt - g.dtUpd;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "px-6 pb-8"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-lg border border-slate-200 overflow-hidden"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "overflow-x-auto scroll-shadow"
+  }, /*#__PURE__*/React.createElement("table", {
+    className: "w-full border-collapse"
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
+    className: "bg-slate-100"
+  }, /*#__PURE__*/React.createElement("th", {
+    rowSpan: 2,
+    className: "px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-600 border-r border-b border-slate-200 align-bottom"
+  }, "Miền / PS / Khách hàng"), /*#__PURE__*/React.createElement("th", {
+    rowSpan: 2,
+    className: "px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-600 border-r border-b border-slate-200 align-bottom"
+  }, "Số KH"), /*#__PURE__*/React.createElement("th", {
+    rowSpan: 2,
+    className: "px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-600 border-r border-b border-slate-200 align-bottom"
+  }, "Số SP"), /*#__PURE__*/React.createElement("th", {
+    colSpan: 4,
+    className: "px-3 py-1.5 text-center text-[11px] font-bold uppercase tracking-wide text-slate-700 border-r border-b border-slate-200 bg-slate-200/60"
+  }, "Quota / Số lượng"), /*#__PURE__*/React.createElement("th", {
+    colSpan: 4,
+    className: "px-3 py-1.5 text-center text-[11px] font-bold uppercase tracking-wide text-emerald-800 border-r border-b border-slate-200 bg-emerald-50/60"
+  }, "Doanh thu"), /*#__PURE__*/React.createElement("th", {
+    rowSpan: 2,
+    className: "px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-amber-700 border-b border-slate-200 align-bottom",
+    style: {
+      minWidth: 200
+    }
+  }, "Giải trình")), /*#__PURE__*/React.createElement("tr", {
+    className: "bg-slate-100"
+  }, /*#__PURE__*/React.createElement("th", {
+    className: "px-3 py-2 text-right text-[10.5px] font-semibold uppercase tracking-wide text-slate-600 border-b border-slate-200"
+  }, "KH đầu năm"), /*#__PURE__*/React.createElement("th", {
+    className: "px-3 py-2 text-right text-[10.5px] font-semibold uppercase tracking-wide text-orange-700 border-b border-slate-200"
+  }, "Thực hiện YTD"), /*#__PURE__*/React.createElement("th", {
+    className: "px-3 py-2 text-right text-[10.5px] font-semibold uppercase tracking-wide text-slate-600 border-b border-slate-200"
+  }, "Khả dụng YTD"), /*#__PURE__*/React.createElement("th", {
+    className: "px-3 py-2 text-right text-[10.5px] font-semibold uppercase tracking-wide text-slate-600 border-r border-b border-slate-200"
+  }, "SL kế hoạch"), /*#__PURE__*/React.createElement("th", {
+    className: "px-3 py-2 text-right text-[10.5px] font-semibold uppercase tracking-wide text-slate-600 border-b border-slate-200"
+  }, "KH đầu năm"), /*#__PURE__*/React.createElement("th", {
+    className: "px-3 py-2 text-right text-[10.5px] font-semibold uppercase tracking-wide text-orange-700 border-b border-slate-200"
+  }, "Thực hiện YTD"), /*#__PURE__*/React.createElement("th", {
+    className: "px-3 py-2 text-right text-[10.5px] font-semibold uppercase tracking-wide text-blue-700 border-b border-slate-200"
+  }, "Update"), /*#__PURE__*/React.createElement("th", {
+    className: "px-3 py-2 text-right text-[10.5px] font-semibold uppercase tracking-wide text-slate-600 border-r border-b border-slate-200"
+  }, "Chênh lệch"))), /*#__PURE__*/React.createElement("tbody", null, data.regions.map(rg => /*#__PURE__*/React.createElement(SummaryRegionRow, {
+    key: rg.region,
+    reg: rg
+  })), /*#__PURE__*/React.createElement("tr", {
+    className: "bg-slate-800 text-white font-semibold"
+  }, /*#__PURE__*/React.createElement("td", {
+    className: "px-4 py-2.5 text-[12.5px] border-t-2 border-slate-900"
+  }, "TỔNG CỘNG"), /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-2.5 text-right text-[12.5px] tabular-nums"
+  }, g.custCount), /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-2.5 text-right text-[12.5px] tabular-nums"
+  }, g.prodCount), /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-2.5 text-right text-[12.5px] tabular-nums"
+  }, fmtInt(g.quotaFY)), /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-2.5 text-right text-[12.5px] tabular-nums"
+  }, fmtInt(g.ytd)), /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-2.5 text-right text-[12.5px] tabular-nums"
+  }, fmtInt(g.quotaAvail)), /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-2.5 text-right text-[12.5px] tabular-nums"
+  }, fmtInt(g.sl)), /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-2.5 text-right text-[12.5px] tabular-nums"
+  }, moneyTy3(g.dt)), /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-2.5 text-right text-[12.5px] tabular-nums"
+  }, moneyTy3(g.dtYtd)), /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-2.5 text-right text-[12.5px] tabular-nums"
+  }, moneyTy3(g.dtUpd)), /*#__PURE__*/React.createElement("td", {
+    className: `px-3 py-2.5 text-right text-[12.5px] tabular-nums ${chG > 0 ? 'text-red-300' : chG < 0 ? 'text-emerald-300' : ''}`
+  }, chG === 0 ? '—' : MASK_MONEY ? '•••' : (chG > 0 ? '+' : '') + fmtTy3(chG)), /*#__PURE__*/React.createElement("td", {
+    className: "px-4 py-2.5"
+  })))))), /*#__PURE__*/React.createElement("p", {
+    className: "text-[11px] text-slate-400 mt-2"
+  }, "Doanh thu = SL × đơn giá (theo từng dòng); ≥1 tỷ hiện theo tỷ (3 số lẻ), nhỏ hơn hiện theo triệu. Thực hiện YTD = tổng SL thực hiện các tháng đã qua. Chênh lệch = DThu đầu năm − DThu update."));
+}
+const chCls = v => v > 0 ? 'text-red-600' : v < 0 ? 'text-emerald-700' : 'text-slate-400';
+function StatCells({
+  d,
+  size
+}) {
+  const ch = d.dt - d.dtUpd;
+  const p = size === 'sm' ? 'py-1.5 text-[12px]' : 'py-2 text-[13px]';
+  const num = size === 'sm' ? 'text-slate-600' : 'text-slate-700';
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("td", {
+    className: `px-3 ${p} text-right tabular-nums font-medium ${num}`
+  }, fmtInt(d.quotaFY)), /*#__PURE__*/React.createElement("td", {
+    className: `px-3 ${p} text-right tabular-nums font-medium text-orange-${size === 'sm' ? '600' : '700'}`
+  }, fmtInt(d.ytd)), /*#__PURE__*/React.createElement("td", {
+    className: `px-3 ${p} text-right tabular-nums font-medium ${num}`
+  }, fmtInt(d.quotaAvail)), /*#__PURE__*/React.createElement("td", {
+    className: `px-3 ${p} text-right tabular-nums font-medium ${num} border-r border-slate-100`
+  }, fmtInt(d.sl)), /*#__PURE__*/React.createElement("td", {
+    className: `px-3 ${p} text-right tabular-nums font-medium ${num}`
+  }, moneyTy3(d.dt)), /*#__PURE__*/React.createElement("td", {
+    className: `px-3 ${p} text-right tabular-nums font-medium text-orange-${size === 'sm' ? '600' : '700'}`
+  }, moneyTy3(d.dtYtd)), /*#__PURE__*/React.createElement("td", {
+    className: `px-3 ${p} text-right tabular-nums font-medium text-blue-${size === 'sm' ? '600' : '700'}`
+  }, moneyTy3(d.dtUpd)), /*#__PURE__*/React.createElement("td", {
+    className: `px-3 ${p} text-right tabular-nums font-semibold border-r border-slate-100 ${chCls(ch)}`
+  }, ch === 0 ? '—' : MASK_MONEY ? '•••' : (ch > 0 ? '+' : '') + fmtTy3(ch)));
+}
+function SummaryRegionRow({
+  reg
+}) {
+  const [open, setOpen] = useState(true);
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("tr", {
+    className: "bg-sky-50 hover:bg-sky-100 cursor-pointer border-b border-slate-200",
+    onClick: () => setOpen(!open)
+  }, /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-2 text-[13px] font-bold text-sky-900 border-r border-slate-100"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "inline-flex items-center gap-1.5"
+  }, open ? /*#__PURE__*/React.createElement(ChevronDown, {
+    size: 14,
+    className: "text-sky-600"
+  }) : /*#__PURE__*/React.createElement(ChevronRight, {
+    size: 14,
+    className: "text-sky-600"
+  }), reg.region)), /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-2 text-right text-[13px] tabular-nums font-semibold text-sky-900 border-r border-slate-100"
+  }, reg.custCount), /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-2 text-right text-[13px] tabular-nums font-semibold text-sky-900 border-r border-slate-100"
+  }, reg.prodCount), /*#__PURE__*/React.createElement(StatCells, {
+    d: reg
+  }), /*#__PURE__*/React.createElement("td", {
+    className: "border-b border-slate-100"
+  })), open && reg.psList.map(ps => /*#__PURE__*/React.createElement(SummaryPSRow, {
+    key: ps.ps,
+    ps: ps
+  })));
+}
+function SummaryPSRow({
+  ps
+}) {
+  const [open, setOpen] = useState(false);
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("tr", {
+    className: "bg-slate-50 hover:bg-slate-100 cursor-pointer border-b border-slate-200",
+    onClick: () => setOpen(!open)
+  }, /*#__PURE__*/React.createElement("td", {
+    className: "px-4 py-2 text-[13px] font-semibold text-slate-800 border-r border-slate-100"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "inline-flex items-center gap-1.5 pl-4"
+  }, open ? /*#__PURE__*/React.createElement(ChevronDown, {
+    size: 14,
+    className: "text-slate-500"
+  }) : /*#__PURE__*/React.createElement(ChevronRight, {
+    size: 14,
+    className: "text-slate-500"
+  }), ps.ps)), /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-2 text-right text-[13px] tabular-nums font-medium text-slate-700 border-r border-slate-100"
+  }, ps.custCount), /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-2 text-right text-[13px] tabular-nums font-medium text-slate-700 border-r border-slate-100"
+  }, ps.prodCount), /*#__PURE__*/React.createElement(StatCells, {
+    d: ps
+  }), /*#__PURE__*/React.createElement("td", {
+    className: "border-b border-slate-100"
+  })), open && ps.custs.map(c => {
+    const ch = c.dt - c.dtUpd;
+    return /*#__PURE__*/React.createElement("tr", {
+      key: c.cust,
+      className: "hover:bg-slate-50/60 border-b border-slate-100"
+    }, /*#__PURE__*/React.createElement("td", {
+      className: "px-4 py-1.5 text-[12px] text-slate-600 pl-14 border-r border-slate-100"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "truncate"
+    }, c.cust), " ", /*#__PURE__*/React.createElement("span", {
+      className: "text-[10px] text-slate-400 font-mono"
+    }, c.custId)), /*#__PURE__*/React.createElement("td", {
+      className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-slate-400 border-r border-slate-100"
+    }, "—"), /*#__PURE__*/React.createElement("td", {
+      className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-slate-500 border-r border-slate-100"
+    }, c.prodCount), /*#__PURE__*/React.createElement("td", {
+      className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-slate-600"
+    }, fmtInt(c.quotaFY)), /*#__PURE__*/React.createElement("td", {
+      className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-orange-600"
+    }, fmtInt(c.ytd)), /*#__PURE__*/React.createElement("td", {
+      className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-slate-600"
+    }, fmtInt(c.quotaAvail)), /*#__PURE__*/React.createElement("td", {
+      className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-slate-600 border-r border-slate-100"
+    }, fmtInt(c.sl)), /*#__PURE__*/React.createElement("td", {
+      className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-slate-600"
+    }, moneyTy3(c.dt)), /*#__PURE__*/React.createElement("td", {
+      className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-orange-600"
+    }, moneyTy3(c.dtYtd)), /*#__PURE__*/React.createElement("td", {
+      className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-blue-600"
+    }, moneyTy3(c.dtUpd)), /*#__PURE__*/React.createElement("td", {
+      className: `px-3 py-1.5 text-right text-[12px] tabular-nums font-medium border-r border-slate-100 ${chCls(ch)}`
+    }, ch === 0 ? '—' : MASK_MONEY ? '•••' : (ch > 0 ? '+' : '') + fmtTy3(ch)), /*#__PURE__*/React.createElement("td", {
+      className: "px-4 py-1.5 text-left text-[11.5px] text-slate-600 max-w-xs"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "truncate",
+      title: c.note
+    }, c.note || /*#__PURE__*/React.createElement("span", {
+      className: "text-slate-300"
+    }, "—"))));
+  }));
+}
+
+// ============ ADD PRODUCT MODAL ============
+function AddProductModal({
+  catalog,
+  customer,
+  onClose,
+  onConfirm
+}) {
+  const [grp, setGrp] = useState('');
+  const [mset, setMset] = useState('');
+  const [prod, setProd] = useState('');
+  const [busy, setBusy] = useState(false);
+  const groups = useMemo(() => Array.from(new Set(catalog.map(c => c.grp).filter(Boolean))).sort(), [catalog]);
+  const msets = useMemo(() => Array.from(new Set(catalog.filter(c => c.grp === grp).map(c => c.mset).filter(Boolean))).sort(), [catalog, grp]);
+  const prods = useMemo(() => catalog.filter(c => c.grp === grp && (msets.length === 0 || c.mset === mset)), [catalog, grp, mset, msets]);
+  const selected = useMemo(() => prods.find(c => c.prod === prod), [prods, prod]);
+  const confirm = async () => {
+    if (!prod || !selected) return;
+    setBusy(true);
+    await onConfirm({
+      custId: customer.custId,
+      cust: customer.customer,
+      ps: customer.ps,
+      region: customer.region,
+      grp: selected.grp,
+      mset: selected.mset,
+      prod: selected.prod,
+      price: selected.price
+    });
+    setBusy(false);
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-50 flex items-center justify-center p-4",
+    onClick: onClose
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-xl shadow-2xl p-6 max-w-md w-full",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "font-semibold text-[15px]"
+  }, "Thêm sản phẩm"), /*#__PURE__*/React.createElement("p", {
+    className: "text-[12px] text-slate-500 mt-0.5 mb-4"
+  }, "cho ", /*#__PURE__*/React.createElement("span", {
+    className: "font-medium text-slate-700"
+  }, customer.customer), " · ", customer.ps), /*#__PURE__*/React.createElement("label", {
+    className: "block text-[11px] uppercase tracking-wide text-slate-500 font-medium mb-1"
+  }, "Nhóm sản phẩm"), /*#__PURE__*/React.createElement("select", {
+    value: grp,
+    onChange: e => {
+      setGrp(e.target.value);
+      setMset('');
+      setProd('');
+    },
+    className: "w-full mb-3 px-3 py-2 text-[13px] border border-slate-200 rounded-md outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "— Chọn nhóm —"), groups.map(g => /*#__PURE__*/React.createElement("option", {
+    key: g,
+    value: g
+  }, g))), msets.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
+    className: "block text-[11px] uppercase tracking-wide text-slate-500 font-medium mb-1"
+  }, "Bộ vật tư"), /*#__PURE__*/React.createElement("select", {
+    value: mset,
+    onChange: e => {
+      setMset(e.target.value);
+      setProd('');
+    },
+    disabled: !grp,
+    className: "w-full mb-3 px-3 py-2 text-[13px] border border-slate-200 rounded-md outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-50"
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "— Chọn bộ vật tư —"), msets.map(m => /*#__PURE__*/React.createElement("option", {
+    key: m,
+    value: m
+  }, m)))), /*#__PURE__*/React.createElement("label", {
+    className: "block text-[11px] uppercase tracking-wide text-slate-500 font-medium mb-1"
+  }, "Sản phẩm"), /*#__PURE__*/React.createElement("select", {
+    value: prod,
+    onChange: e => setProd(e.target.value),
+    disabled: !grp,
+    className: "w-full mb-3 px-3 py-2 text-[13px] border border-slate-200 rounded-md outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-50"
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "— Chọn sản phẩm —"), prods.map((c, i) => /*#__PURE__*/React.createElement("option", {
+    key: c.prod + i,
+    value: c.prod
+  }, c.prod))), selected && /*#__PURE__*/React.createElement("div", {
+    className: "bg-slate-50 rounded-md px-3 py-2 mb-4 text-[12px] text-slate-600"
+  }, "Đơn giá: ", /*#__PURE__*/React.createElement("span", {
+    className: "font-semibold text-slate-800"
+  }, moneyPrice(selected.price), " tr.VND"), " · sẽ tạo 12 dòng (T4→T3), số lượng = 0"), /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-end gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: onClose,
+    disabled: busy,
+    className: "px-3 py-1.5 text-[13px] text-slate-600 hover:bg-slate-100 rounded-md disabled:opacity-50"
+  }, "Hủy"), /*#__PURE__*/React.createElement("button", {
+    onClick: confirm,
+    disabled: busy || !prod,
+    className: "flex items-center gap-1.5 px-4 py-1.5 text-[13px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-md disabled:opacity-50"
+  }, busy ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Loader2, {
+    size: 14,
+    className: "animate-spin"
+  }), " Đang thêm…") : 'Thêm sản phẩm'))));
+}
+
+// ============ MAIN APP ============
+function App() {
+  const [authed, setAuthed] = useState(false);
+  const [auth, setAuth] = useState({
+    role: '',
+    scope: '',
+    username: ''
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [rows, setRows] = useState([]);
+  const [drafts, setDrafts] = useState({}); // { 'row:key': value } — chưa lưu
+  const [saving, setSaving] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
+  const [tab, setTab] = useState('detail'); // 'detail' | 'summary'
+  const [search, setSearch] = useState('');
+  const [psFilter, setPsFilter] = useState('all');
+  const [regionFilter, setRegionFilter] = useState('all');
+  const [groupFilter, setGroupFilter] = useState('all');
+  const [custFilter, setCustFilter] = useState('all');
+  const [fields, setFields] = useState([]);
+  const [catalog, setCatalog] = useState([]);
+  const [addFor, setAddFor] = useState(null);
+  const [dataRev, setDataRev] = useState(0);
+  const [stale, setStale] = useState(false);
+  const [maskMoney, setMaskMoney] = useState(true);
+  MASK_MONEY = maskMoney;
+  const canEdit = auth.role === 'admin' || auth.role === 'ps';
+  const isAdmin = auth.role === 'admin';
+  useEffect(() => {
+    if (sessionStorage.getItem(TOK_KEY)) {
+      api('ping').then(r => {
+        setAuth({
+          role: r.role,
+          scope: r.scope,
+          username: r.username
+        });
+        setAuthed(true);
+      }).catch(() => {
+        sessionStorage.removeItem(TOK_KEY);
+        setLoading(false);
+      });
+    } else setLoading(false);
+  }, []);
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const r = await api('getData');
+      const fields = r.fields || [];
+      setFields(fields);
+      const arr = r.rows || [];
+      const rowNums = r.rowNums || [];
+      const objs = new Array(arr.length);
+      for (let i = 0; i < arr.length; i++) {
+        const row = arr[i];
+        const o = {
+          _row: rowNums[i]
+        };
+        for (let j = 0; j < fields.length; j++) {
+          const v = row[j];
+          if (v !== '' && v !== null && v !== undefined) o[fields[j]] = v;
+        }
+        objs[i] = o;
+      }
+      setRows(objs);
+      if (typeof r.rev === 'number') setDataRev(r.rev);
+      setStale(false);
+      if (r.role) setAuth({
+        role: r.role,
+        scope: r.scope,
+        username: r.username
+      });
+    } catch (err) {
+      setError('Không tải được dữ liệu: ' + err.message);
+    }
+    setLoading(false);
+  }, []);
+  useEffect(() => {
+    if (authed) loadData();
+  }, [authed, loadData]);
+
+  // tải danh mục (Catalog) để thêm sản phẩm
+  useEffect(() => {
+    if (!authed) return;
+    api('getCatalog').then(r => setCatalog(r.catalog || [])).catch(() => {});
+  }, [authed]);
+  const addProduct = useCallback(async sel => {
+    try {
+      await api('addProduct', sel);
+      setAddFor(null);
+      await loadData();
+    } catch (err) {
+      setError('Thêm sản phẩm thất bại: ' + err.message);
+      setAddFor(null);
+    }
+  }, [loadData]);
+
+  // Warn on leaving with unsaved drafts
+  const draftCount = Object.keys(drafts).length;
+  useEffect(() => {
+    const handler = e => {
+      if (Object.keys(drafts).length > 0) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [drafts]);
+
+  // Poll phát hiện dữ liệu thay đổi từ user khác (45s/lần)
+  const revRef = useRef(0);
+  useEffect(() => {
+    revRef.current = dataRev;
+  }, [dataRev]);
+  const draftRef = useRef(0);
+  useEffect(() => {
+    draftRef.current = draftCount;
+  }, [draftCount]);
+  useEffect(() => {
+    if (!authed) return;
+    const id = setInterval(async () => {
+      try {
+        const r = await api('getRev');
+        if (typeof r.rev === 'number' && r.rev !== revRef.current) {
+          if (draftRef.current === 0) loadData(); // không có gì chưa lưu → tự tải bản mới
+          else setStale(true); // đang sửa dở → chỉ báo, không ghi đè
+        }
+      } catch (e) {}
+    }, 45000);
+    return () => clearInterval(id);
+  }, [authed, loadData]);
+
+  // Accumulate edits into drafts (NOT sent yet)
+  const commit = useCallback(updates => {
+    const arr = Array.isArray(updates) ? updates : [updates];
+    setDrafts(prev => {
+      const next = {
+        ...prev
+      };
+      arr.forEach(u => {
+        next[`${u.row}:${u.key}`] = u.value;
+      });
+      return next;
+    });
+  }, []);
+
+  // Save all drafts to Sheet in one batch
+  const saveDrafts = useCallback(async () => {
+    const entries = Object.entries(drafts);
+    if (entries.length === 0) return;
+    setSaving(true);
+    setError('');
+    const batch = entries.map(([k, value]) => {
+      const [row, key] = k.split(':');
+      return {
+        row: Number(row),
+        key,
+        value
+      };
+    });
+    try {
+      const res = await api('updateCells', {
+        updates: batch
+      });
+      setRows(prev => prev.map(r => {
+        const ups = batch.filter(u => u.row === r._row);
+        if (!ups.length) return r;
+        const nr = {
+          ...r
+        };
+        ups.forEach(u => {
+          nr[u.key] = u.value;
+        });
+        return nr;
+      }));
+      setDrafts({});
+      if (typeof res.rev === 'number') setDataRev(res.rev);
+      setStale(false);
+      setSavedFlash(true);
+      setTimeout(() => setSavedFlash(false), 2000);
+    } catch (err) {
+      setError('Lưu thất bại: ' + err.message + '. Các thay đổi vẫn được giữ, thử lại.');
+    }
+    setSaving(false);
+  }, [drafts]);
+  const discardDrafts = () => {
+    if (confirm('Hủy tất cả thay đổi chưa lưu?')) setDrafts({});
+  };
+
+  // effective rows overlay drafts
+  const effectiveRows = useMemo(() => {
+    if (draftCount === 0) return rows;
+    return rows.map(r => {
+      let out = r;
+      Object.entries(drafts).forEach(([k, v]) => {
+        const [rowNum, key] = k.split(':');
+        if (Number(rowNum) === r._row) {
+          if (out === r) out = {
+            ...r
+          };
+          out[key] = v;
+        }
+      });
+      return out;
+    });
+  }, [rows, drafts, draftCount]);
+  const draftKeys = useMemo(() => new Set(Object.keys(drafts)), [drafts]);
+  const regionList = useMemo(() => Array.from(new Set(rows.map(r => r.region).filter(Boolean))).sort(), [rows]);
+  const psList = useMemo(() => {
+    const s = new Set();
+    rows.forEach(r => {
+      if ((regionFilter === 'all' || r.region === regionFilter) && r.ps) s.add(r.ps);
+    });
+    return Array.from(s).sort();
+  }, [rows, regionFilter]);
+  const allGroups = useMemo(() => {
+    const s = new Set();
+    rows.forEach(r => {
+      if (regionFilter !== 'all' && r.region !== regionFilter) return;
+      if (psFilter !== 'all' && r.ps !== psFilter) return;
+      if (r.grp) s.add(r.grp);
+    });
+    return Array.from(s).sort();
+  }, [rows, psFilter, regionFilter]);
+  const custList = useMemo(() => {
+    const m = new Map();
+    rows.forEach(r => {
+      if (regionFilter !== 'all' && r.region !== regionFilter) return;
+      if (psFilter !== 'all' && r.ps !== psFilter) return;
+      if (r.cust && !m.has(r.cust)) m.set(r.cust, r.custId);
+    });
+    return Array.from(m.entries()).map(([cust, id]) => ({
+      cust,
+      id
+    })).sort((a, b) => a.cust.localeCompare(b.cust));
+  }, [rows, psFilter, regionFilter]);
+  const tree = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    const byCust = new Map();
+    for (const r of effectiveRows) {
+      if (regionFilter !== 'all' && r.region !== regionFilter) continue;
+      if (psFilter !== 'all' && r.ps !== psFilter) continue;
+      if (custFilter !== 'all' && r.cust !== custFilter) continue;
+      if (groupFilter !== 'all' && r.grp !== groupFilter) continue;
+      if (q && !(r.cust?.toLowerCase().includes(q) || r.prod?.toLowerCase().includes(q) || r.custId?.toLowerCase().includes(q) || r.mset?.toLowerCase().includes(q))) continue;
+      const cKey = r.cust || '—';
+      if (!byCust.has(cKey)) byCust.set(cKey, {
+        customer: cKey,
+        custId: r.custId,
+        region: r.region,
+        psSet: new Set(),
+        gMap: new Map()
+      });
+      const c = byCust.get(cKey);
+      if (r.ps) c.psSet.add(r.ps);
+      const gKey = r.grp || 'Khác';
+      if (!c.gMap.has(gKey)) c.gMap.set(gKey, {
+        name: gKey,
+        ps: r.ps,
+        note: '',
+        aprRow: null,
+        pMap: new Map()
+      });
+      const g = c.gMap.get(gKey);
+      if (!g.ps && r.ps) g.ps = r.ps; // PS gắn theo nhóm SP
+      if (r.mo === NOTE_MONTH) {
+        if (g.aprRow == null) g.aprRow = r._row;
+        if (r.note) g.note = r.note;
+      } // giải trình theo nhóm SP
+      // key product by (mset, prod) so same product name under different bộ vật tư stays separate
+      const msKey = r.mset || '(Không phân loại)';
+      const pKey = msKey + '||' + (r.prod || '—');
+      if (!g.pMap.has(pKey)) g.pMap.set(pKey, {
+        mset: msKey,
+        product: r.prod || '—',
+        monthly: Array.from({
+          length: 12
+        }, () => ({
+          rev: 0,
+          dt: 0,
+          revUpd: 0,
+          act: 0,
+          hasUpd: false,
+          rows: []
+        }))
+      });
+      const p = g.pMap.get(pKey);
+      const idx = MONTHS.indexOf(r.mo);
+      if (idx >= 0) {
+        const cell = p.monthly[idx];
+        cell.rows.push(r);
+        cell.rev += Number(r.rev) || 0;
+        cell.dt += Number(r.dt) || 0;
+        cell.act += Number(r.act) || 0;
+        if (r.revUpd !== undefined && r.revUpd !== '' && r.revUpd !== null) {
+          cell.hasUpd = true;
+          cell.revUpd += Number(r.revUpd) || 0;
+        }
+      }
+    }
+    // helper: sản phẩm có dữ liệu? (quota / SL đầu năm / SL update / thực hiện đều >0 thì mới hiện)
+    const hasData = p => {
+      let sum = 0;
+      p.monthly.forEach(c => {
+        sum += c.rev + c.act + (c.hasUpd ? c.revUpd : 0);
+        c.rows.forEach(r => {
+          sum += (Number(r.qOld) || 0) + (Number(r.qMain) || 0) + (Number(r.qAdd) || 0);
+        });
+      });
+      return sum > 0;
+    };
+    const custDt = c => {
+      let dt = 0;
+      c.gMap.forEach(g => g.pMap.forEach(p => {
+        p.monthly.forEach(cell => cell.rows.forEach(r => {
+          dt += (Number(r.rev) || 0) * (Number(r.price) || 0);
+        }));
+      }));
+      return dt;
+    };
+    return Array.from(byCust.values()).map(c => ({
+      customer: c.customer,
+      custId: c.custId,
+      region: c.region,
+      psList: Array.from(c.psSet),
+      _dt: custDt(c),
+      groups: Array.from(c.gMap.values()).map(g => {
+        const products = Array.from(g.pMap.values()).filter(hasData);
+        products.sort((a, b) => (a.mset || '').localeCompare(b.mset || '') || (a.product || '').localeCompare(b.product || ''));
+        let gdt = 0;
+        products.forEach(p => p.monthly.forEach(cell => cell.rows.forEach(r => {
+          gdt += (Number(r.rev) || 0) * (Number(r.price) || 0);
+        })));
+        return {
+          name: g.name,
+          ps: g.ps,
+          note: g.note,
+          aprRow: g.aprRow,
+          products,
+          _dt: gdt
+        };
+      }).filter(g => g.products.length > 0).sort((a, b) => b._dt - a._dt)
+    })).filter(c => c.groups.length > 0).sort((a, b) => b._dt - a._dt); // DThu KH đầu năm giảm dần
+  }, [effectiveRows, search, psFilter, regionFilter, custFilter, groupFilter]);
+  const stats = useMemo(() => {
+    let plan = 0,
+      dt = 0,
+      dtUpd = 0,
+      productCount = 0;
+    tree.forEach(c => c.groups.forEach(g => {
+      productCount += g.products.length;
+      g.products.forEach(p => {
+        p.monthly.forEach((cell, i) => {
+          plan += cell.rev;
+          const past = MONTHS[i] < CURRENT_MONTH;
+          cell.rows.forEach(r => {
+            const pr = Number(r.price) || 0;
+            dt += (Number(r.rev) || 0) * pr;
+            const upd = past ? Number(r.act) || 0 : r.revUpd !== undefined && r.revUpd !== '' && r.revUpd !== null ? Number(r.revUpd) || 0 : Number(r.rev) || 0;
+            dtUpd += upd * pr;
+          });
+        });
+      });
+    }));
+    return {
+      plan,
+      dt,
+      dtUpd,
+      chenh: dt - dtUpd,
+      customers: tree.length,
+      productCount
+    };
+  }, [tree]);
+
+  // nhãn cột giống Google Sheet, theo field key
+  const FIELD_LABEL = {
+    fy: 'Năm tài chính',
+    mo: 'Tháng Kế hoạch',
+    region: 'Miền',
+    ps: 'PS',
+    cust: 'Khách hàng',
+    custId: 'Mã Khách hàng',
+    grp: 'Nhóm sản phẩm',
+    prod: 'Sản phẩm',
+    mset: 'Bộ vật tư',
+    mcnt: 'Bộ',
+    qOld: 'Quota Thầu cũ còn lại',
+    mMain: 'Tháng Thầu chính',
+    dMain: 'Thời gian Thầu chính',
+    qMain: 'Quota Thầu chính',
+    mAdd: 'Tháng Thầu bổ sung',
+    qAdd: 'Quota Bổ sung',
+    rev: 'SL Kế hoạch đầu năm',
+    price: 'Đơn giá',
+    dt: 'DT',
+    upd: 'Đã cập nhật',
+    ytd: 'Thực hiện YTD',
+    revUpd: 'SL Kế hoạch Update',
+    note: 'Giải trình',
+    act: 'SL thực hiện'
+  };
+  const exportCsv = () => {
+    const cols = fields && fields.length ? fields : ['fy', 'mo', 'region', 'ps', 'cust', 'custId', 'grp', 'prod', 'mset', 'qOld', 'mMain', 'qMain', 'mAdd', 'qAdd', 'ytd', 'rev', 'revUpd', 'act', 'price', 'dt'];
+    const header = cols.map(f => FIELD_LABEL[f] || f);
+    const esc = v => {
+      if (v == null) return '';
+      const s = String(v).replace(/"/g, '""');
+      return /[",\n]/.test(s) ? `"${s}"` : s;
+    };
+    const lines = effectiveRows.filter(r => (regionFilter === 'all' || r.region === regionFilter) && (psFilter === 'all' || r.ps === psFilter) && (custFilter === 'all' || r.cust === custFilter)).map(r => cols.map(f => esc(r[f])).join(','));
+    const csv = '\ufeff' + [header.join(','), ...lines].join('\n');
+    const blob = new Blob([csv], {
+      type: 'text/csv;charset=utf-8;'
+    });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `ke-hoach_${psFilter === 'all' ? 'all' : psFilter.replace(/\s/g, '-')}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+  };
+  const logout = () => {
+    if (draftCount > 0 && !confirm('Còn thay đổi chưa lưu. Thoát mà không lưu?')) return;
+    sessionStorage.removeItem(TOK_KEY);
+    setAuthed(false);
+    setRows([]);
+    setDrafts({});
+    setAuth({
+      role: '',
+      scope: '',
+      username: ''
+    });
+  };
+  if (!authed) return /*#__PURE__*/React.createElement(LoginGate, {
+    onAuth: a => {
+      setAuth(a);
+      setAuthed(true);
+    }
+  });
+  if (loading) return /*#__PURE__*/React.createElement("div", {
+    className: "min-h-screen flex items-center justify-center bg-slate-100"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-center text-slate-500"
+  }, /*#__PURE__*/React.createElement(Loader2, {
+    size: 24,
+    className: "animate-spin mx-auto mb-2 text-emerald-600"
+  }), "Đang tải dữ liệu từ hệ thống…"));
+  const curLabel = MONTH_LABELS[CURRENT_MONTH_IDX];
+  return /*#__PURE__*/React.createElement("div", {
+    className: "min-h-screen bg-slate-100 text-slate-900"
+  }, /*#__PURE__*/React.createElement("header", {
+    className: "bg-white border-b border-slate-200 sticky top-0 z-30"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "px-6 pt-1 flex justify-end"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-[10px] text-slate-400 italic"
+  }, "Designed and developed by Do Hoang Giang")), /*#__PURE__*/React.createElement("div", {
+    className: "px-6 pb-3 flex items-center justify-between gap-4 flex-wrap"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-12 h-9 rounded-lg bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center text-white font-bold text-[13px] tracking-wide"
+  }, "CHCS"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h1", {
+    className: "text-[15px] font-semibold leading-tight"
+  }, "Kế hoạch kinh doanh FY26"), /*#__PURE__*/React.createElement("p", {
+    className: "text-[11px] text-slate-500 leading-tight"
+  }, auth.username, " · ", /*#__PURE__*/React.createElement("span", {
+    className: "font-medium text-slate-600"
+  }, ROLE_LABELS[auth.role] || auth.role), auth.scope ? ` · ${auth.scope}` : '', " · ", rows.length, " dòng"))), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 flex-wrap"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex-1"
+  }), draftCount > 0 ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
+    onClick: discardDrafts,
+    disabled: saving,
+    className: "px-3 py-1.5 text-[13px] text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md disabled:opacity-50"
+  }, "Hủy"), /*#__PURE__*/React.createElement("button", {
+    onClick: saveDrafts,
+    disabled: saving,
+    className: "flex items-center gap-1.5 px-4 py-1.5 text-[13px] font-semibold bg-amber-500 hover:bg-amber-600 text-white rounded-md shadow-sm disabled:opacity-60"
+  }, saving ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Loader2, {
+    size: 14,
+    className: "animate-spin"
+  }), " Đang lưu…") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Check, {
+    size: 14
+  }), " Xác nhận điều chỉnh (", draftCount, ")"))) : /*#__PURE__*/React.createElement("span", {
+    className: "flex items-center gap-1.5 text-[12px] px-2.5 py-1 text-slate-400"
+  }, savedFlash ? /*#__PURE__*/React.createElement("span", {
+    className: "text-emerald-600 flex items-center gap-1"
+  }, /*#__PURE__*/React.createElement(Check, {
+    size: 12
+  }), " Đã lưu xuống Sheets") : 'Chưa có thay đổi'), /*#__PURE__*/React.createElement("div", {
+    className: "w-px h-6 bg-slate-200 mx-1"
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setMaskMoney(m => !m),
+    title: maskMoney ? 'Hiện doanh thu' : 'Ẩn doanh thu',
+    className: `flex items-center gap-1.5 px-3 py-1.5 text-[13px] rounded-md ${maskMoney ? 'bg-slate-800 text-white hover:bg-slate-700' : 'text-slate-700 hover:bg-slate-100'}`
+  }, maskMoney ? /*#__PURE__*/React.createElement(EyeOff, {
+    size: 14
+  }) : /*#__PURE__*/React.createElement(Eye, {
+    size: 14
+  }), " ", maskMoney ? 'Hiện DT' : 'Ẩn DT'), /*#__PURE__*/React.createElement("button", {
+    onClick: loadData,
+    className: "flex items-center gap-1.5 px-3 py-1.5 text-[13px] text-slate-700 hover:bg-slate-100 rounded-md"
+  }, /*#__PURE__*/React.createElement(RefreshCw, {
+    size: 14
+  }), " Reload"), /*#__PURE__*/React.createElement("button", {
+    onClick: exportCsv,
+    className: "flex items-center gap-1.5 px-3 py-1.5 text-[13px] text-slate-700 hover:bg-slate-100 rounded-md"
+  }, /*#__PURE__*/React.createElement(Download, {
+    size: 14
+  }), " Export"), /*#__PURE__*/React.createElement("button", {
+    onClick: logout,
+    className: "flex items-center gap-1.5 px-3 py-1.5 text-[13px] text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md"
+  }, /*#__PURE__*/React.createElement(LogOut, {
+    size: 14
+  }), " Đăng xuất"))), /*#__PURE__*/React.createElement("div", {
+    className: "px-6 flex items-center gap-1 border-t border-slate-100"
+  }, /*#__PURE__*/React.createElement(TabBtn, {
+    active: tab === 'detail',
+    onClick: () => setTab('detail'),
+    label: "Chi tiết kế hoạch"
+  }), /*#__PURE__*/React.createElement(TabBtn, {
+    active: tab === 'summary',
+    onClick: () => setTab('summary'),
+    label: "Tổng hợp theo PS / KH"
+  })), error && /*#__PURE__*/React.createElement("div", {
+    className: "px-6 py-2 bg-red-50 border-t border-red-200 text-[12px] text-red-800 flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement(AlertCircle, {
+    size: 14
+  }), " ", error), stale && /*#__PURE__*/React.createElement("div", {
+    className: "px-6 py-2 bg-amber-50 border-t border-amber-200 text-[12px] text-amber-900 flex items-center gap-3"
+  }, /*#__PURE__*/React.createElement(AlertCircle, {
+    size: 14
+  }), /*#__PURE__*/React.createElement("span", null, "Dữ liệu đã được cập nhật từ nơi khác. Thay đổi bạn lưu vẫn chỉ ghi vào phần của mình."), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      if (draftCount === 0 || confirm('Tải lại sẽ bỏ các thay đổi chưa lưu. Tiếp tục?')) {
+        setDrafts({});
+        loadData();
+      }
+    },
+    className: "ml-auto px-2.5 py-1 text-[12px] font-medium bg-amber-500 hover:bg-amber-600 text-white rounded-md"
+  }, "Tải lại bản mới"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setStale(false),
+    className: "text-amber-600 hover:text-amber-800 text-[12px]"
+  }, "Bỏ qua"))), /*#__PURE__*/React.createElement("div", {
+    className: "px-6 pt-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4"
+  }, /*#__PURE__*/React.createElement(StatCard, {
+    label: "SL kế hoạch đầu năm",
+    value: fmtInt(stats.plan),
+    sublabel: `${stats.customers} KH · ${stats.productCount} SP`,
+    accent: "emerald"
+  }), /*#__PURE__*/React.createElement(StatCard, {
+    label: "DThu KH đầu năm",
+    value: moneyTy3(stats.dt),
+    sublabel: "SL đầu năm × đơn giá",
+    accent: "teal"
+  }), /*#__PURE__*/React.createElement(StatCard, {
+    label: "DThu KH update",
+    value: moneyTy3(stats.dtUpd),
+    sublabel: "SL update × đơn giá",
+    accent: "blue"
+  }), /*#__PURE__*/React.createElement(StatCard, {
+    label: "Chênh lệch DThu",
+    value: MASK_MONEY ? '•••' : (stats.chenh > 0 ? '+' : '') + fmtTy3(stats.chenh),
+    sublabel: "đầu năm − update",
+    accent: stats.chenh > 0 ? 'red' : stats.chenh < 0 ? 'emerald' : 'slate'
+  }), /*#__PURE__*/React.createElement(StatCard, {
+    label: "Số sản phẩm",
+    value: String(stats.productCount),
+    sublabel: `${psFilter === 'all' ? 'tất cả PS' : psFilter}`,
+    accent: "slate"
+  }), /*#__PURE__*/React.createElement(StatCard, {
+    label: "Chưa lưu",
+    value: String(draftCount),
+    sublabel: draftCount > 0 ? 'nhấn Xác nhận để lưu' : 'đã đồng bộ',
+    accent: "amber"
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "px-6"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-lg border border-slate-200 px-3 py-2.5 flex items-center gap-2.5 flex-wrap mb-4"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-[11px] uppercase tracking-wide text-slate-500 font-semibold pl-1"
+  }, "Lọc"), regionList.length > 0 && (auth.role === 'admin' || auth.role === 'manager' || auth.role === 'product_manager') && /*#__PURE__*/React.createElement("select", {
+    value: regionFilter,
+    onChange: e => {
+      setRegionFilter(e.target.value);
+      setPsFilter('all');
+      setCustFilter('all');
+    },
+    className: "px-2.5 py-1.5 text-[13px] border border-slate-200 rounded-md bg-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+  }, /*#__PURE__*/React.createElement("option", {
+    value: "all"
+  }, "Miền: tất cả"), regionList.map(rg => /*#__PURE__*/React.createElement("option", {
+    key: rg,
+    value: rg
+  }, rg))), auth.role !== 'ps' && /*#__PURE__*/React.createElement("select", {
+    value: psFilter,
+    onChange: e => {
+      setPsFilter(e.target.value);
+      setCustFilter('all');
+    },
+    className: "px-2.5 py-1.5 text-[13px] border border-slate-200 rounded-md bg-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+  }, /*#__PURE__*/React.createElement("option", {
+    value: "all"
+  }, "PS: tất cả (", psList.length, ")"), psList.map(p => /*#__PURE__*/React.createElement("option", {
+    key: p,
+    value: p
+  }, p))), /*#__PURE__*/React.createElement("select", {
+    value: custFilter,
+    onChange: e => setCustFilter(e.target.value),
+    className: "px-2.5 py-1.5 text-[13px] border border-slate-200 rounded-md bg-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 max-w-[220px]"
+  }, /*#__PURE__*/React.createElement("option", {
+    value: "all"
+  }, "Khách hàng: tất cả (", custList.length, ")"), custList.map(c => /*#__PURE__*/React.createElement("option", {
+    key: c.cust,
+    value: c.cust
+  }, c.cust))), /*#__PURE__*/React.createElement("select", {
+    value: groupFilter,
+    onChange: e => setGroupFilter(e.target.value),
+    className: "px-2.5 py-1.5 text-[13px] border border-slate-200 rounded-md bg-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+  }, /*#__PURE__*/React.createElement("option", {
+    value: "all"
+  }, "Nhóm SP: tất cả"), allGroups.map(g => /*#__PURE__*/React.createElement("option", {
+    key: g,
+    value: g
+  }, g))), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1"
+  }), tab === 'detail' && /*#__PURE__*/React.createElement("div", {
+    className: "relative"
+  }, /*#__PURE__*/React.createElement(Search, {
+    size: 14,
+    className: "absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
+  }), /*#__PURE__*/React.createElement("input", {
+    value: search,
+    onChange: e => setSearch(e.target.value),
+    placeholder: "Tìm KH, sản phẩm, bộ vật tư…",
+    className: "pl-8 pr-3 py-1.5 text-[13px] border border-slate-200 rounded-md w-64 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+  })))), tab === 'summary' ? /*#__PURE__*/React.createElement(SummaryView, {
+    rows: effectiveRows,
+    psFilter: psFilter,
+    regionFilter: regionFilter,
+    custFilter: custFilter,
+    groupFilter: groupFilter
+  }) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "px-6 pb-8"
+  }, tree.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-lg border border-slate-200 px-4 py-12 text-center text-slate-400 text-sm"
+  }, rows.length === 0 ? 'Sheet trống' : 'Không có khách hàng nào khớp với bộ lọc') : tree.map((c, i) => /*#__PURE__*/React.createElement(CustomerCard, {
+    key: (c.custId || c.customer) + i,
+    ...c,
+    pendingKeys: draftKeys,
+    onCommit: commit,
+    canEdit: canEdit,
+    onAddProduct: canEdit && catalog.length ? setAddFor : null,
+    defaultOpen: false
+  })))), addFor && /*#__PURE__*/React.createElement(AddProductModal, {
+    catalog: catalog,
+    customer: addFor,
+    onClose: () => setAddFor(null),
+    onConfirm: addProduct
+  }));
+}
+function TabBtn({
+  active,
+  onClick,
+  label
+}) {
+  return /*#__PURE__*/React.createElement("button", {
+    onClick: onClick,
+    className: `px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors ${active ? 'border-emerald-500 text-emerald-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`
+  }, label);
+}
+function StatCard({
+  label,
+  value,
+  sublabel,
+  accent
+}) {
+  const dot = {
+    emerald: 'bg-emerald-500',
+    teal: 'bg-teal-500',
+    blue: 'bg-blue-500',
+    amber: 'bg-amber-500',
+    red: 'bg-red-500',
+    slate: 'bg-slate-400'
+  };
+  const txt = {
+    emerald: 'text-emerald-700',
+    teal: 'text-teal-700',
+    blue: 'text-blue-700',
+    amber: 'text-amber-700',
+    red: 'text-red-600',
+    slate: 'text-slate-900'
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-xl border border-slate-200 px-4 py-3 shadow-sm"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-1.5 mb-1.5"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: `w-1.5 h-1.5 rounded-full ${dot[accent]}`
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-[10.5px] uppercase tracking-wider text-slate-500 font-semibold truncate"
+  }, label)), /*#__PURE__*/React.createElement("div", {
+    className: `text-[19px] font-bold tabular-nums leading-none ${txt[accent] || 'text-slate-900'}`
+  }, value), /*#__PURE__*/React.createElement("div", {
+    className: "text-[10.5px] text-slate-400 mt-1 truncate"
+  }, sublabel));
+}
+document.getElementById('boot')?.remove();
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(ErrorBoundary, null, React.createElement(App)));
+} catch (err) {
+  var be = document.getElementById('boot-err');
+  if (be) be.textContent = 'Lỗi khởi động: ' + err.message;
+  console.error('Boot error:', err);
+}
+</script>
 </body>
 </html>
