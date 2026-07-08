@@ -169,8 +169,8 @@ const moneyTy3 = v => MASK_MONEY ? '•••' : !v ? '—' : fmtTy3(v);
 // ============ API (Supabase Edge Functions) ============
 const SUPABASE_URL = "https://nrfxymnfmjhbsgpipvkb.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yZnh5bW5mbWpoYnNncGlwdmtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4ODk2OTQsImV4cCI6MjA5ODQ2NTY5NH0.cN-jTdPOLWKd9kNa1nNMENzHcY0_BftyYgPEbuVTWeo";
-const FN_LOGIN = SUPABASE_URL + "/functions/v1/login";
-const FN_API = SUPABASE_URL + "/functions/v1/api";
+const FN_LOGIN = SUPABASE_URL + "/functions/v1/sale_target-login";
+const FN_API = SUPABASE_URL + "/functions/v1/sale_target-api";
 
 async function api(action, payload = {}) {
   const token = sessionStorage.getItem(TOK_KEY) || '';
