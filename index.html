@@ -95,7 +95,7 @@ const EyeOff = Ic(['M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16
 // ============ CONSTANTS ============
 const MONTHS = ['2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09', '2026-10', '2026-11', '2026-12', '2027-01', '2027-02', '2027-03'];
 const MONTH_LABELS = ['T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12', 'T1', 'T2', 'T3'];
-const CURRENT_MONTH = '2026-07'; // ← đổi mỗi tháng để khoá các tháng trước
+const CURRENT_MONTH = '2026-06'; // ← đổi mỗi tháng để khoá các tháng trước
 const CURRENT_MONTH_IDX = MONTHS.indexOf(CURRENT_MONTH);
 const NOTE_MONTH = MONTHS[Math.max(0, CURRENT_MONTH_IDX - 1)]; // giải trình lưu vào tháng hiện tại − 1
 const TOK_KEY = 'sp_tok';
@@ -1172,10 +1172,10 @@ function ProductSummaryView({ rows, psFilter, regionFilter, custFilter, groupFil
     const add = (a, c) => { for (let i = 0; i < 12; i++) a.mo[i] += c.mo[i]; a.thYtd += c.thYtd; a.khYtd += c.khYtd; return a; };
     const prods = Array.from(prodMap.values()).map(p => {
       const regs = Array.from(p.regMap.values());
-      regs.sort((a, b) => b.thYtd - a.thYtd);
+      regs.sort((a, b) => a.region.localeCompare(b.region, 'vi'));
       return { prod: p.prod, grp: p.grp, regs, ...regs.reduce(add, fold()) };
     });
-    prods.sort((a, b) => b.thYtd - a.thYtd);
+    prods.sort((a, b) => a.prod.localeCompare(b.prod, 'vi'));
     return { prods, grand: prods.reduce(add, fold()) };
   }, [rows, psFilter, regionFilter, custFilter, groupFilter]);
 
@@ -1191,8 +1191,12 @@ function ProductSummaryView({ rows, psFilter, regionFilter, custFilter, groupFil
     className: `px-2 py-1.5 text-right text-[12px] tabular-nums border-r border-slate-100 ${MONTHS[i] === CURRENT_MONTH ? 'bg-blue-50/40' : ''} ${extra || ''}`
   }, fmtInt(v)));
 
+  // KH còn lại YTD = tổng SL KH update từ THÁNG HIỆN TẠI đến cuối năm (gồm cả tháng hiện tại)
+  const curIdx = Math.max(0, MONTHS.indexOf(CURRENT_MONTH));
+  const sumFromNow = (mo) => mo.reduce((s, v, i) => (i >= curIdx ? s + v : s), 0);
+
   const conLai = (v) => h('td', {
-    className: `px-3 py-1.5 text-right text-[12px] tabular-nums font-medium ${v > 0 ? 'text-red-600' : v < 0 ? 'text-emerald-600' : 'text-slate-400'}`
+    className: 'px-3 py-1.5 text-right text-[12px] tabular-nums font-medium text-blue-700'
   }, fmtInt(v));
 
   return h('div', { className: 'px-6 pb-8' },
@@ -1220,7 +1224,7 @@ function ProductSummaryView({ rows, psFilter, regionFilter, custFilter, groupFil
                       ),
                       ...moCells(p.mo, 'font-medium'),
                       h('td', { className: 'px-3 py-2 text-right text-[12.5px] tabular-nums font-semibold text-orange-700 border-r border-slate-100' }, fmtInt(p.thYtd)),
-                      conLai(p.khYtd - p.thYtd)
+                      conLai(sumFromNow(p.mo))
                     )
                   ];
                   if (isOpen) {
@@ -1230,7 +1234,7 @@ function ProductSummaryView({ rows, psFilter, regionFilter, custFilter, groupFil
                           h('td', { className: 'pl-10 pr-4 py-1.5 text-[12px] text-slate-600 border-r border-slate-100' }, rg.region),
                           ...moCells(rg.mo),
                           h('td', { className: 'px-3 py-1.5 text-right text-[12px] tabular-nums text-orange-600 border-r border-slate-100' }, fmtInt(rg.thYtd)),
-                          conLai(rg.khYtd - rg.thYtd)
+                          conLai(sumFromNow(rg.mo))
                         )
                       );
                     }
@@ -1241,7 +1245,7 @@ function ProductSummaryView({ rows, psFilter, regionFilter, custFilter, groupFil
               h('td', { className: 'px-4 py-2.5 text-[12.5px] border-t-2 border-slate-900' }, 'TỔNG CỘNG'),
               ...data.grand.mo.map((v, i) => h('td', { key: 'gm' + i, className: 'px-2 py-2.5 text-right text-[12px] tabular-nums' }, fmtInt(v))),
               h('td', { className: 'px-3 py-2.5 text-right text-[12.5px] tabular-nums' }, fmtInt(data.grand.thYtd)),
-              h('td', { className: 'px-3 py-2.5 text-right text-[12.5px] tabular-nums' }, fmtInt(data.grand.khYtd - data.grand.thYtd))
+              h('td', { className: 'px-3 py-2.5 text-right text-[12.5px] tabular-nums' }, fmtInt(sumFromNow(data.grand.mo)))
             )
           )
         )
@@ -2281,7 +2285,16 @@ function App() {
     className: "bg-white rounded-lg border border-slate-200 px-3 py-2.5 flex items-center gap-2.5 flex-wrap mb-4"
   }, /*#__PURE__*/React.createElement("span", {
     className: "text-[11px] uppercase tracking-wide text-slate-500 font-semibold pl-1"
-  }, "Lọc"), regionList.length > 0 && (auth.role === 'admin' || auth.role === 'manager' || auth.role === 'product_manager') && /*#__PURE__*/React.createElement("select", {
+  }, "Lọc"), /*#__PURE__*/React.createElement("select", {
+    value: groupFilter,
+    onChange: e => setGroupFilter(e.target.value),
+    className: "px-2.5 py-1.5 text-[13px] border border-slate-200 rounded-md bg-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+  }, /*#__PURE__*/React.createElement("option", {
+    value: "all"
+  }, "Nhóm SP: tất cả"), allGroups.map(g => /*#__PURE__*/React.createElement("option", {
+    key: g,
+    value: g
+  }, g))), regionList.length > 0 && (auth.role === 'admin' || auth.role === 'manager' || auth.role === 'product_manager') && /*#__PURE__*/React.createElement("select", {
     value: regionFilter,
     onChange: e => {
       setRegionFilter(e.target.value);
@@ -2315,16 +2328,7 @@ function App() {
   }, "Khách hàng: tất cả (", custList.length, ")"), custList.map(c => /*#__PURE__*/React.createElement("option", {
     key: c.cust,
     value: c.cust
-  }, c.cust))), /*#__PURE__*/React.createElement("select", {
-    value: groupFilter,
-    onChange: e => setGroupFilter(e.target.value),
-    className: "px-2.5 py-1.5 text-[13px] border border-slate-200 rounded-md bg-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
-  }, /*#__PURE__*/React.createElement("option", {
-    value: "all"
-  }, "Nhóm SP: tất cả"), allGroups.map(g => /*#__PURE__*/React.createElement("option", {
-    key: g,
-    value: g
-  }, g))), /*#__PURE__*/React.createElement("div", {
+  }, c.cust))), /*#__PURE__*/React.createElement("div", {
     className: "flex-1"
   }), tab === 'detail' && /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowBasePlan(v => !v),
