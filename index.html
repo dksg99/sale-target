@@ -689,7 +689,11 @@ function ProductRow({
     locked: true,
     width: 58,
     bg: "bg-slate-50/40"
-  })) : []), /*#__PURE__*/React.createElement("td", {
+  })) : [/*#__PURE__*/React.createElement("td", {
+    key: 'b-collapsed',
+    className: "border-r border-b border-slate-100 bg-slate-50/40",
+    style: { width: 58, minWidth: 58 }
+  })]), /*#__PURE__*/React.createElement("td", {
     className: "px-2 py-1.5 text-[12px] text-right tabular-nums font-semibold text-slate-800 border-r border-b border-slate-100 bg-slate-100/70",
     style: {
       width: 100
@@ -1710,7 +1714,7 @@ function App() {
   const [dataRev, setDataRev] = useState(0);
   const [stale, setStale] = useState(false);
   const [maskMoney, setMaskMoney] = useState(true);
-  const [showBasePlan, setShowBasePlan] = useState(true);
+  const [showBasePlan, setShowBasePlan] = useState(false);
   MASK_MONEY = maskMoney;
   const canEdit = auth.role === 'admin' || auth.role === 'ps';
   const isAdmin = auth.role === 'admin';
