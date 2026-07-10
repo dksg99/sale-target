@@ -100,7 +100,7 @@ const CURRENT_MONTH_IDX = MONTHS.indexOf(CURRENT_MONTH);
 const NOTE_MONTH = MONTHS[Math.max(0, CURRENT_MONTH_IDX - 1)]; // giải trình lưu vào tháng hiện tại − 1
 const TOK_KEY = 'sp_tok';
 const ROLE_LABELS = {
-  admin: 'Quản trị',
+  admin: 'Quản trị hệ thống',
   manager: 'Quản lý',
   area_manager: 'Quản lý miền',
   product_manager: 'Quản lý ngành hàng',
@@ -109,6 +109,7 @@ const ROLE_LABELS = {
 // Cấu hình hiển thị theo team (bu). Thêm team mới chỉ cần thêm 1 dòng ở đây.
 const TEAMS = {
   chcs: { label: 'CHCS', name: 'CHCS', gradient: '#1877f2' },
+  test: { label: 'TEST', name: 'TEST', gradient: '#1877f2' },
   // ctch: { label: 'CTCH', name: 'CTCH', gradient: '#42b72a' }, // bật lại khi có dữ liệu thật
 };
 const TEAM_ALL = { label: 'ALL', name: 'Tất cả team', gradient: '#65676b' };
