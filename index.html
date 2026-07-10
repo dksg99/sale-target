@@ -95,7 +95,7 @@ const EyeOff = Ic(['M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16
 // ============ CONSTANTS ============
 const MONTHS = ['2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09', '2026-10', '2026-11', '2026-12', '2027-01', '2027-02', '2027-03'];
 const MONTH_LABELS = ['T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12', 'T1', 'T2', 'T3'];
-const CURRENT_MONTH = '2026-06'; // ← đổi mỗi tháng để khoá các tháng trước
+const CURRENT_MONTH = '2026-07'; // ← đổi mỗi tháng để khoá các tháng trước
 const CURRENT_MONTH_IDX = MONTHS.indexOf(CURRENT_MONTH);
 const NOTE_MONTH = MONTHS[Math.max(0, CURRENT_MONTH_IDX - 1)]; // giải trình lưu vào tháng hiện tại − 1
 const TOK_KEY = 'sp_tok';
@@ -510,6 +510,74 @@ function EditableCell({
   }));
 }
 
+// ============ PRICE CELL (đơn giá — sửa được, nhập theo TRIỆU VND, lưu VND) ============
+function PriceCell({
+  value,
+  pending,
+  onCommit,
+  locked,
+  width = 85
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const inputRef = useRef(null);
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editing]);
+  const base = "px-2 py-1.5 text-[12px] text-right tabular-nums border-r border-b border-slate-100 bg-amber-50/40";
+  // Khoá (tháng đã qua / không có quyền) → chỉ hiện
+  if (locked) {
+    return /*#__PURE__*/React.createElement("td", {
+      className: `${base} text-slate-400 select-none`,
+      style: { width, minWidth: width }
+    }, moneyPrice(value));
+  }
+  // Đang ẩn DT → không cho sửa (tránh lộ số khi bấm) — bấm "Hiện DT" để sửa
+  if (MASK_MONEY) {
+    return /*#__PURE__*/React.createElement("td", {
+      className: `${base} text-slate-400 cursor-not-allowed select-none`,
+      style: { width, minWidth: width },
+      title: 'Bấm "Hiện DT" để sửa đơn giá'
+    }, '•••');
+  }
+  if (editing) {
+    const commit = () => {
+      const tr = parseNum(draft); // giá trị nhập = TRIỆU VND
+      const nv = tr ? Math.round(tr * 1e6) : 0; // lưu xuống DB theo VND
+      if (nv !== (Number(value) || 0)) onCommit(nv);
+      setEditing(false);
+    };
+    return /*#__PURE__*/React.createElement("td", {
+      className: "p-0 border-r border-b border-slate-100",
+      style: { width, minWidth: width }
+    }, /*#__PURE__*/React.createElement("input", {
+      ref: inputRef,
+      value: draft,
+      onChange: e => setDraft(e.target.value),
+      onBlur: commit,
+      onKeyDown: e => {
+        if (e.key === 'Enter') { e.preventDefault(); commit(); }
+        else if (e.key === 'Escape') setEditing(false);
+      },
+      className: "w-full h-full px-2 py-1.5 text-[12px] text-right outline-none ring-2 ring-emerald-500 ring-inset bg-white tabular-nums"
+    }));
+  }
+  return /*#__PURE__*/React.createElement("td", {
+    onClick: () => {
+      setDraft(value ? String(value / 1e6) : ''); // hiện theo triệu VND để sửa
+      setEditing(true);
+    },
+    className: `${base} cursor-text ${pending ? 'text-amber-900 font-semibold !bg-amber-50' : 'text-slate-700 font-medium hover:bg-amber-100/60'}`,
+    style: { width, minWidth: width },
+    title: 'Đơn giá (triệu VND) — bấm để sửa'
+  }, moneyPrice(value), pending && /*#__PURE__*/React.createElement("span", {
+    className: "ml-0.5 inline-block w-1 h-1 rounded-full bg-amber-500 align-middle"
+  }));
+}
+
 // ============ PRODUCT ROW ============
 // monthly[i] = { rev, dt, revUpd, hasUpd, rows: [...] }
 function ProductRow({
@@ -602,6 +670,16 @@ function ProductRow({
     }));
     onCommit(updates);
   };
+  // Đơn giá: ghi CÙNG một giá trị vào tất cả các dòng của SP
+  // (DThu = Σ SL × đơn_giá theo từng dòng → mọi dòng phải cùng đơn giá).
+  const commitPrice = newVal => {
+    if (!allRows.length) return;
+    onCommit(allRows.map(r => ({
+      row: r._row,
+      key: 'price',
+      value: newVal
+    })));
+  };
   const pend = key => allRows.some(r => pendingKeys.has(`${r._row}:${key}`));
   const pendUpd = cell => cell.rows.some(r => pendingKeys.has(`${r._row}:revUpd`));
   return /*#__PURE__*/React.createElement("tr", {
@@ -681,12 +759,12 @@ function ProductRow({
     style: {
       width: 95
     }
-  }, fmtInt(stats.quotaAvailable)), /*#__PURE__*/React.createElement("td", {
-    className: "px-2 py-1.5 text-[12px] text-right tabular-nums text-slate-700 font-medium border-r border-b border-slate-100 bg-amber-50/40",
-    style: {
-      width: 85
-    }
-  }, moneyPrice(stats.price)), (showBasePlan ? MONTHS.map((mo, i) => /*#__PURE__*/React.createElement(EditableCell, {
+  }, fmtInt(stats.quotaAvailable)), /*#__PURE__*/React.createElement(PriceCell, {
+    value: stats.price,
+    pending: pend('price'),
+    locked: !canEdit,
+    onCommit: commitPrice
+  }), (showBasePlan ? MONTHS.map((mo, i) => /*#__PURE__*/React.createElement(EditableCell, {
     key: 'b' + mo,
     value: monthly[i].rev,
     locked: true,
@@ -919,7 +997,7 @@ function ProductGroupSection({
     style: {
       width: 85
     }
-  }, "Đơn giá"), /*#__PURE__*/React.createElement("th", {
+  }, "Đơn giá ✏"), /*#__PURE__*/React.createElement("th", {
     colSpan: showBasePlan ? 12 : 1,
     onClick: () => onToggleBasePlan && onToggleBasePlan(),
     className: "px-2 py-1 text-center text-[10px] font-bold uppercase tracking-wide text-slate-600 border-r border-b border-slate-200 bg-slate-100/70 cursor-pointer select-none hover:bg-slate-200/70",
