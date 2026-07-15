@@ -1470,7 +1470,8 @@ function SummaryView({
         dtUpd: 0,
         quotaFY: 0,
         ytd: 0,
-        prods: new Set()
+        prods: new Set(),
+        grpMap: new Map()   // Nhóm SP → { prodMap: Sản phẩm }
       });
       const c = ps.custMap.get(cKey);
       if (r.mo === NOTE_MONTH && r.note) c.note = r.note;
@@ -1478,15 +1479,40 @@ function SummaryView({
       const isPast = (r.mo || '') < CURRENT_MONTH;
       const actQty = Number(r.act) || 0;
       const updQty = isPast ? actQty : r.revUpd !== undefined && r.revUpd !== '' && r.revUpd !== null ? Number(r.revUpd) || 0 : Number(r.rev) || 0;
-      c.sl += Number(r.rev) || 0;
-      c.dt += (Number(r.rev) || 0) * price;
-      c.dtUpd += updQty * price;
-      c.quotaFY += (Number(r.qOld) || 0) + (Number(r.qMain) || 0) + (Number(r.qAdd) || 0);
-      if (isPast) {
-        c.ytd += actQty;
-        c.dtYtd += actQty * price;
-      }
+      // Delta của DÒNG này — dùng chung cho cả 3 cấp: KH → Nhóm SP → Sản phẩm
+      const dSl = Number(r.rev) || 0;
+      const dDt = dSl * price;
+      const dDtUpd = updQty * price;
+      const dQuota = (Number(r.qOld) || 0) + (Number(r.qMain) || 0) + (Number(r.qAdd) || 0);
+      const dYtd = isPast ? actQty : 0;
+      const dDtYtd = isPast ? actQty * price : 0;
+      const bump = o => {
+        o.sl += dSl;
+        o.dt += dDt;
+        o.dtUpd += dDtUpd;
+        o.quotaFY += dQuota;
+        o.ytd += dYtd;
+        o.dtYtd += dDtYtd;
+      };
+      bump(c);
       c.prods.add(`${r.grp}||${r.mset}||${r.prod}`);
+      // --- Cấp Nhóm sản phẩm ---
+      const gKey = r.grp || '(Không rõ nhóm)';
+      if (!c.grpMap.has(gKey)) c.grpMap.set(gKey, {
+        grp: gKey,
+        sl: 0, dt: 0, dtYtd: 0, dtUpd: 0, quotaFY: 0, ytd: 0,
+        prodMap: new Map()
+      });
+      const gNode = c.grpMap.get(gKey);
+      bump(gNode);
+      // --- Cấp Sản phẩm (trong 1 nhóm, phân biệt theo bộ vật tư + sản phẩm) ---
+      const pKey = `${r.mset}||${r.prod}`;
+      if (!gNode.prodMap.has(pKey)) gNode.prodMap.set(pKey, {
+        prod: r.prod || '—',
+        mset: r.mset || '',
+        sl: 0, dt: 0, dtYtd: 0, dtUpd: 0, quotaFY: 0, ytd: 0
+      });
+      bump(gNode.prodMap.get(pKey));
     }
     const fold = () => ({
       sl: 0,
@@ -1510,11 +1536,29 @@ function SummaryView({
     };
     const regions = Array.from(regMap.values()).map(reg => {
       const psList = Array.from(reg.psMap.values()).map(ps => {
-        const custs = Array.from(ps.custMap.values()).map(c => ({
-          ...c,
-          prodCount: c.prods.size,
-          quotaAvail: c.quotaFY - c.ytd
-        }));
+        const custs = Array.from(ps.custMap.values()).map(c => {
+          // Nhóm SP dưới KH, và Sản phẩm dưới Nhóm SP
+          const grps = Array.from(c.grpMap.values()).map(gp => {
+            const prods = Array.from(gp.prodMap.values()).map(pp => ({
+              ...pp,
+              quotaAvail: pp.quotaFY - pp.ytd
+            }));
+            prods.sort((a, b) => b.dt - a.dt);
+            return {
+              ...gp,
+              prods,
+              prodCount: prods.length,
+              quotaAvail: gp.quotaFY - gp.ytd
+            };
+          });
+          grps.sort((a, b) => b.dt - a.dt);
+          return {
+            ...c,
+            grps,
+            prodCount: c.prods.size,
+            quotaAvail: c.quotaFY - c.ytd
+          };
+        });
         custs.sort((a, b) => b.dt - a.dt);
         const tot = custs.reduce(add, fold());
         tot.custCount = custs.length;
@@ -1715,46 +1759,111 @@ function SummaryPSRow({
     d: ps
   }), /*#__PURE__*/React.createElement("td", {
     className: "border-b border-slate-100"
-  })), open && ps.custs.map(c => {
-    const ch = c.dtUpd - c.dt;
-    return /*#__PURE__*/React.createElement("tr", {
-      key: c.cust,
-      className: "hover:bg-slate-50/60 border-b border-slate-100"
-    }, /*#__PURE__*/React.createElement("td", {
-      className: "px-4 py-1.5 text-[12px] text-slate-600 pl-14 border-r border-slate-100"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "truncate"
-    }, c.cust), " ", /*#__PURE__*/React.createElement("span", {
-      className: "text-[10px] text-slate-400 font-mono"
-    }, c.custId)), /*#__PURE__*/React.createElement("td", {
-      className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-slate-400 border-r border-slate-100"
-    }, "—"), /*#__PURE__*/React.createElement("td", {
-      className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-slate-500 border-r border-slate-100"
-    }, c.prodCount), /*#__PURE__*/React.createElement("td", {
-      className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-slate-600"
-    }, fmtInt(c.quotaFY)), /*#__PURE__*/React.createElement("td", {
-      className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-orange-600"
-    }, fmtInt(c.ytd)), /*#__PURE__*/React.createElement("td", {
-      className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-slate-600"
-    }, fmtInt(c.quotaAvail)), /*#__PURE__*/React.createElement("td", {
-      className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-slate-600 border-r border-slate-100"
-    }, fmtInt(c.sl)), /*#__PURE__*/React.createElement("td", {
-      className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-slate-600"
-    }, moneyTy3(c.dt)), /*#__PURE__*/React.createElement("td", {
-      className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-orange-600"
-    }, moneyTy3(c.dtYtd)), /*#__PURE__*/React.createElement("td", {
-      className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-blue-600"
-    }, moneyTy3(c.dtUpd)), /*#__PURE__*/React.createElement("td", {
-      className: `px-3 py-1.5 text-right text-[12px] tabular-nums font-medium border-r border-slate-100 ${chCls(ch)}`
-    }, ch === 0 ? '—' : MASK_MONEY ? '•••' : (ch > 0 ? '+' : '') + fmtTy3(ch)), /*#__PURE__*/React.createElement("td", {
-      className: "px-4 py-1.5 text-left text-[11.5px] text-slate-600 max-w-xs"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "truncate",
-      title: c.note
-    }, c.note || /*#__PURE__*/React.createElement("span", {
-      className: "text-slate-300"
-    }, "—"))));
-  }));
+  })), open && ps.custs.map(c => /*#__PURE__*/React.createElement(SummaryCustRow, {
+    key: c.cust,
+    cust: c
+  })));
+}
+// Cấp Khách hàng — có thể mở ra để xem Nhóm sản phẩm bên dưới.
+function SummaryCustRow({
+  cust: c
+}) {
+  const [open, setOpen] = useState(false);
+  const hasKids = c.grps && c.grps.length > 0;
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("tr", {
+    className: "hover:bg-slate-50/60 border-b border-slate-100" + (hasKids ? " cursor-pointer" : ""),
+    onClick: hasKids ? () => setOpen(!open) : undefined
+  }, /*#__PURE__*/React.createElement("td", {
+    className: "px-4 py-1.5 text-[12px] text-slate-600 border-r border-slate-100"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "inline-flex items-center gap-1",
+    style: { paddingLeft: 40 }
+  }, hasKids ? open ? /*#__PURE__*/React.createElement(ChevronDown, {
+    size: 12,
+    className: "text-slate-400"
+  }) : /*#__PURE__*/React.createElement(ChevronRight, {
+    size: 12,
+    className: "text-slate-400"
+  }) : /*#__PURE__*/React.createElement("span", {
+    style: { width: 12, display: 'inline-block' }
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "truncate"
+  }, c.cust), " ", /*#__PURE__*/React.createElement("span", {
+    className: "text-[10px] text-slate-400 font-mono"
+  }, c.custId))), /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-slate-400 border-r border-slate-100"
+  }, "—"), /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-slate-500 border-r border-slate-100"
+  }, c.prodCount), /*#__PURE__*/React.createElement(StatCells, {
+    d: c,
+    size: 'sm'
+  }), /*#__PURE__*/React.createElement("td", {
+    className: "px-4 py-1.5 text-left text-[11.5px] text-slate-600 max-w-xs"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "truncate",
+    title: c.note
+  }, c.note || /*#__PURE__*/React.createElement("span", {
+    className: "text-slate-300"
+  }, "—")))), open && c.grps.map(gp => /*#__PURE__*/React.createElement(SummaryGroupRow, {
+    key: gp.grp,
+    grp: gp
+  })));
+}
+// Cấp Nhóm sản phẩm — có thể mở ra để xem từng Sản phẩm bên dưới.
+function SummaryGroupRow({
+  grp: g
+}) {
+  const [open, setOpen] = useState(false);
+  const hasKids = g.prods && g.prods.length > 0;
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("tr", {
+    className: "bg-slate-50/40 hover:bg-slate-100/60 border-b border-slate-100" + (hasKids ? " cursor-pointer" : ""),
+    onClick: hasKids ? () => setOpen(!open) : undefined
+  }, /*#__PURE__*/React.createElement("td", {
+    className: "px-4 py-1.5 text-[12px] text-slate-700 border-r border-slate-100"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "inline-flex items-center gap-1",
+    style: { paddingLeft: 68 }
+  }, hasKids ? open ? /*#__PURE__*/React.createElement(ChevronDown, {
+    size: 12,
+    className: "text-slate-400"
+  }) : /*#__PURE__*/React.createElement(ChevronRight, {
+    size: 12,
+    className: "text-slate-400"
+  }) : /*#__PURE__*/React.createElement("span", {
+    style: { width: 12, display: 'inline-block' }
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "truncate font-medium"
+  }, g.grp))), /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-slate-400 border-r border-slate-100"
+  }, "—"), /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-slate-500 border-r border-slate-100"
+  }, g.prodCount), /*#__PURE__*/React.createElement(StatCells, {
+    d: g,
+    size: 'sm'
+  }), /*#__PURE__*/React.createElement("td", {
+    className: "border-b border-slate-100"
+  })), open && g.prods.map((p, i) => /*#__PURE__*/React.createElement("tr", {
+    key: p.mset + '||' + p.prod + '||' + i,
+    className: "hover:bg-slate-50/40 border-b border-slate-100"
+  }, /*#__PURE__*/React.createElement("td", {
+    className: "px-4 py-1.5 text-[11.5px] text-slate-500 border-r border-slate-100"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "inline-flex items-center gap-1.5",
+    style: { paddingLeft: 96 }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "truncate"
+  }, p.prod), p.mset ? /*#__PURE__*/React.createElement("span", {
+    className: "text-[10px] text-slate-400"
+  }, "· ", p.mset) : null)), /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-slate-300 border-r border-slate-100"
+  }, "—"), /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-1.5 text-right text-[12px] tabular-nums text-slate-300 border-r border-slate-100"
+  }, "—"), /*#__PURE__*/React.createElement(StatCells, {
+    d: p,
+    size: 'sm'
+  }), /*#__PURE__*/React.createElement("td", {
+    className: "border-b border-slate-100"
+  }))));
 }
 
 // ============ ADD PRODUCT MODAL ============
