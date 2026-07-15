@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
   let body;
   try { body = await req.json(); } catch { return json({ ok: false, error: "bad_body" }, 400); }
 
-  const { username, password } = body;
+  const { username, password, newPassword } = body;
   if (!username || !password) return json({ ok: false, error: "missing_credentials" }, 400);
 
   const admin = createClient(
@@ -76,6 +76,25 @@ Deno.serve(async (req) => {
   const inputHash = await sha256Hex(password);
   if (inputHash.toLowerCase() !== String(user.password_hash).toLowerCase()) {
     return json({ ok: false, error: "invalid" }, 401);
+  }
+
+  // ---- Đổi mật khẩu ----
+  // Nếu client gửi kèm newPassword: sau khi xác thực mật khẩu hiện tại ở trên là đúng,
+  // ta cập nhật hash mới rồi trả về (KHÔNG phát hành token — người dùng đăng nhập lại).
+  if (newPassword !== undefined && newPassword !== null && newPassword !== "") {
+    if (String(newPassword).length < 6) {
+      return json({ ok: false, error: "weak_password" }, 400);
+    }
+    if (String(newPassword) === String(password)) {
+      return json({ ok: false, error: "same_password" }, 400);
+    }
+    const newHash = await sha256Hex(String(newPassword));
+    const { error: upErr } = await admin
+      .from("users")
+      .update({ password_hash: newHash })
+      .eq("username", user.username);
+    if (upErr) return json({ ok: false, error: "update_failed" }, 500);
+    return json({ ok: true, changed: true });
   }
 
   const exp = Date.now() + 8 * 60 * 60 * 1000;

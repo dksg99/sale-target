@@ -298,15 +298,57 @@ function TeamSwitcher({ value, onChange }) {
 function LoginGate({
   onAuth
 }) {
+  const [mode, setMode] = useState('login'); // 'login' | 'change'
   const [username, setUsername] = useState('');
   const [pw, setPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [busy, setBusy] = useState(false);
+  const isChange = mode === 'change';
+  // Dịch mã lỗi từ server sang tiếng Việt cho dễ hiểu.
+  const msgOf = m => ({
+    invalid: 'Sai tài khoản hoặc mật khẩu',
+    unauthorized: 'Phiên hết hạn',
+    weak_password: 'Mật khẩu mới phải từ 6 ký tự trở lên',
+    same_password: 'Mật khẩu mới phải khác mật khẩu hiện tại',
+    same_password_client: 'Mật khẩu mới phải khác mật khẩu hiện tại',
+    mismatch: 'Xác nhận mật khẩu không khớp',
+    update_failed: 'Không cập nhật được mật khẩu, thử lại sau'
+  })[m] || m;
+  const switchMode = m => {
+    setMode(m);
+    setError('');
+    setInfo('');
+    setNewPw('');
+    setConfirmPw('');
+  };
   const submit = async e => {
     if (e) e.preventDefault();
+    setError('');
+    setInfo('');
+    if (isChange) {
+      if (!username || !pw || !newPw || !confirmPw) return;
+      if (newPw !== confirmPw) { setError(msgOf('mismatch')); return; }
+      if (newPw.length < 6) { setError(msgOf('weak_password')); return; }
+      if (newPw === pw) { setError(msgOf('same_password_client')); return; }
+      setBusy(true);
+      try {
+        await api('login', { username, password: pw, newPassword: newPw });
+        setInfo('Đổi mật khẩu thành công. Đăng nhập lại bằng mật khẩu mới.');
+        setPw('');
+        setNewPw('');
+        setConfirmPw('');
+        setMode('login');
+      } catch (err) {
+        setError(msgOf(err.message));
+      }
+      setBusy(false);
+      return;
+    }
     if (!username || !pw) return;
     setBusy(true);
-    setError('');
     try {
       const res = await api('login', {
         username,
@@ -326,7 +368,7 @@ function LoginGate({
         ho_ten: u.ho_ten || u.hoTen || ''
       });
     } catch (err) {
-      setError(err.message === 'unauthorized' ? 'Phiên hết hạn' : err.message);
+      setError(msgOf(err.message));
     }
     setBusy(false);
   };
@@ -377,7 +419,7 @@ function LoginGate({
       marginTop: 4,
       marginBottom: 20
     }
-  }, "Đăng nhập để truy cập"), /*#__PURE__*/React.createElement("input", {
+  }, isChange ? "Đổi mật khẩu" : "Đăng nhập để truy cập"), /*#__PURE__*/React.createElement("input", {
     autoFocus: true,
     value: username,
     onChange: e => setUsername(e.target.value),
@@ -396,7 +438,37 @@ function LoginGate({
     type: "password",
     value: pw,
     onChange: e => setPw(e.target.value),
-    placeholder: "Mật khẩu",
+    placeholder: isChange ? "Mật khẩu hiện tại" : "Mật khẩu",
+    style: {
+      width: '100%',
+      padding: '8px 12px',
+      border: '1px solid #dadde1',
+      borderRadius: 6,
+      fontSize: 14,
+      outline: 'none',
+      boxSizing: 'border-box',
+      marginBottom: isChange ? 10 : 0
+    }
+  }), isChange && /*#__PURE__*/React.createElement("input", {
+    type: "password",
+    value: newPw,
+    onChange: e => setNewPw(e.target.value),
+    placeholder: "Mật khẩu mới (tối thiểu 6 ký tự)",
+    style: {
+      width: '100%',
+      padding: '8px 12px',
+      border: '1px solid #dadde1',
+      borderRadius: 6,
+      fontSize: 14,
+      outline: 'none',
+      boxSizing: 'border-box',
+      marginBottom: 10
+    }
+  }), isChange && /*#__PURE__*/React.createElement("input", {
+    type: "password",
+    value: confirmPw,
+    onChange: e => setConfirmPw(e.target.value),
+    placeholder: "Xác nhận mật khẩu mới",
     style: {
       width: '100%',
       padding: '8px 12px',
@@ -406,7 +478,16 @@ function LoginGate({
       outline: 'none',
       boxSizing: 'border-box'
     }
-  }), error && /*#__PURE__*/React.createElement("div", {
+  }), info && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 12,
+      fontSize: 12,
+      color: '#16a34a',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6
+    }
+  }, info), error && /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 12,
       fontSize: 12,
@@ -417,21 +498,40 @@ function LoginGate({
     }
   }, /*#__PURE__*/React.createElement(AlertCircle, {
     size: 12
-  }), " ", error), /*#__PURE__*/React.createElement("button", {
-    disabled: busy || !username || !pw,
+  }), " ", error), (() => {
+    const disabled = busy || !username || !pw || (isChange && (!newPw || !confirmPw));
+    return /*#__PURE__*/React.createElement("button", {
+      disabled,
+      style: {
+        width: '100%',
+        marginTop: 16,
+        background: disabled ? '#dadde1' : '#1877f2',
+        color: '#fff',
+        padding: '8px 12px',
+        borderRadius: 6,
+        fontSize: 15,
+        fontWeight: 700,
+        border: 'none',
+        cursor: disabled ? 'not-allowed' : 'pointer'
+      }
+    }, busy ? (isChange ? 'Đang đổi…' : 'Đang xác thực…') : (isChange ? 'Đổi mật khẩu' : 'Đăng nhập'));
+  })(), /*#__PURE__*/React.createElement("div", {
     style: {
-      width: '100%',
-      marginTop: 16,
-      background: busy || !username || !pw ? '#dadde1' : '#1877f2',
-      color: '#fff',
-      padding: '8px 12px',
-      borderRadius: 6,
-      fontSize: 15,
-      fontWeight: 700,
-      border: 'none',
-      cursor: busy || !username || !pw ? 'not-allowed' : 'pointer'
+      marginTop: 14,
+      textAlign: 'center'
     }
-  }, busy ? 'Đang xác thực…' : 'Đăng nhập')));
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => switchMode(isChange ? 'login' : 'change'),
+    style: {
+      background: 'none',
+      border: 'none',
+      color: '#1877f2',
+      fontSize: 13,
+      cursor: 'pointer',
+      padding: 0
+    }
+  }, isChange ? 'Quay lại đăng nhập' : 'Đổi mật khẩu'))));
 }
 
 // ============ EDITABLE CELL ============
