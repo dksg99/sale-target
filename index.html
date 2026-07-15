@@ -1340,19 +1340,31 @@ function ProductSummaryView({ rows, psFilter, regionFilter, custFilter, groupFil
       if (!prodMap.has(pKey)) prodMap.set(pKey, { prod: pKey, grp: r.grp, regMap: new Map() });
       const p = prodMap.get(pKey);
       const rKey = r.region || '(Không rõ miền)';
-      if (!p.regMap.has(rKey)) p.regMap.set(rKey, { region: rKey, ...blank() });
+      if (!p.regMap.has(rKey)) p.regMap.set(rKey, { region: rKey, custMap: new Map(), ...blank() });
       const cell = p.regMap.get(rKey);
       const isPast = (r.mo || '') < CURRENT_MONTH;
       const act = Number(r.act) || 0;
       const planUpd = (r.revUpd !== undefined && r.revUpd !== '' && r.revUpd !== null)
         ? (Number(r.revUpd) || 0) : (Number(r.rev) || 0);
-      cell.mo[i] += isPast ? act : planUpd;
+      const val = isPast ? act : planUpd;
+      cell.mo[i] += val;
       if (isPast) { cell.thYtd += act; cell.khYtd += planUpd; }
+      // Cấp Khách hàng dưới Miền
+      const cKey = r.cust || '—';
+      if (!cell.custMap.has(cKey)) cell.custMap.set(cKey, { cust: cKey, custId: r.custId, ...blank() });
+      const cc = cell.custMap.get(cKey);
+      cc.mo[i] += val;
+      if (isPast) { cc.thYtd += act; cc.khYtd += planUpd; }
     }
     const fold = () => ({ mo: MONTHS.map(() => 0), thYtd: 0, khYtd: 0 });
     const add = (a, c) => { for (let i = 0; i < 12; i++) a.mo[i] += c.mo[i]; a.thYtd += c.thYtd; a.khYtd += c.khYtd; return a; };
+    const sumMo = mo => mo.reduce((s, v) => s + v, 0);
     const prods = Array.from(prodMap.values()).map(p => {
-      const regs = Array.from(p.regMap.values());
+      const regs = Array.from(p.regMap.values()).map(rg => {
+        const custs = Array.from(rg.custMap.values());
+        custs.sort((a, b) => sumMo(b.mo) - sumMo(a.mo));
+        return { region: rg.region, custs, mo: rg.mo, thYtd: rg.thYtd, khYtd: rg.khYtd };
+      });
       regs.sort((a, b) => a.region.localeCompare(b.region, 'vi'));
       return { prod: p.prod, grp: p.grp, regs, ...regs.reduce(add, fold()) };
     });
@@ -1386,7 +1398,7 @@ function ProductSummaryView({ rows, psFilter, regionFilter, custFilter, groupFil
         h('table', { className: 'w-full border-collapse' },
           h('thead', null,
             h('tr', { className: 'bg-slate-100' },
-              h('th', { rowSpan: 2, className: 'px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-600 border-r border-b border-slate-200 align-bottom', style: { minWidth: 220 } }, 'Sản phẩm / Miền'),
+              h('th', { rowSpan: 2, className: 'px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-600 border-r border-b border-slate-200 align-bottom', style: { minWidth: 220 } }, 'Sản phẩm / Miền / KH'),
               h('th', { colSpan: 12, className: 'px-3 py-1.5 text-center text-[11px] font-bold uppercase tracking-wide text-blue-800 border-r border-b border-slate-200 bg-blue-50/60' }, 'SL KH update theo tháng'),
               h('th', { rowSpan: 2, className: 'px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-wide text-orange-700 border-r border-b border-slate-200 align-bottom' }, 'Tổng TH YTD'),
               h('th', { rowSpan: 2, className: 'px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-600 border-b border-slate-200 align-bottom' }, 'KH còn lại YTD')
@@ -1410,14 +1422,34 @@ function ProductSummaryView({ rows, psFilter, regionFilter, custFilter, groupFil
                   ];
                   if (isOpen) {
                     for (const rg of p.regs) {
+                      const rKey = p.prod + '||' + rg.region;
+                      const rOpen = open.has(rKey);
+                      const hasCust = rg.custs && rg.custs.length > 0;
                       out.push(
-                        h('tr', { key: p.prod + '||' + rg.region, className: 'border-b border-slate-100' },
-                          h('td', { className: 'pl-10 pr-4 py-1.5 text-[12px] text-slate-600 border-r border-slate-100' }, rg.region),
+                        h('tr', { key: rKey, className: 'border-b border-slate-100 bg-slate-50/40' + (hasCust ? ' hover:bg-slate-100/60 cursor-pointer' : ''), onClick: hasCust ? () => toggle(rKey) : undefined },
+                          h('td', { className: 'pl-10 pr-4 py-1.5 text-[12px] font-medium text-slate-700 border-r border-slate-100' },
+                            h('span', { className: 'inline-block w-3 text-slate-400' }, hasCust ? (rOpen ? '▾' : '▸') : ''), ' ', rg.region
+                          ),
                           ...moCells(rg.mo),
                           h('td', { className: 'px-3 py-1.5 text-right text-[12px] tabular-nums text-orange-600 border-r border-slate-100' }, fmtInt(rg.thYtd)),
                           conLai(sumFromNow(rg.mo))
                         )
                       );
+                      if (rOpen) {
+                        for (const cu of rg.custs) {
+                          out.push(
+                            h('tr', { key: rKey + '||' + cu.cust, className: 'border-b border-slate-100 hover:bg-slate-50/40' },
+                              h('td', { className: 'pl-16 pr-4 py-1.5 text-[11.5px] text-slate-500 border-r border-slate-100' },
+                                h('span', { className: 'truncate' }, cu.cust), ' ',
+                                h('span', { className: 'text-[10px] text-slate-400 font-mono' }, cu.custId)
+                              ),
+                              ...moCells(cu.mo),
+                              h('td', { className: 'px-3 py-1.5 text-right text-[12px] tabular-nums text-orange-500 border-r border-slate-100' }, fmtInt(cu.thYtd)),
+                              conLai(sumFromNow(cu.mo))
+                            )
+                          );
+                        }
+                      }
                     }
                   }
                   return out;
