@@ -16,6 +16,7 @@ tailwind.config = { theme: { extend: { colors: {
 </script>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif; margin: 0; background: #f0f2f5; }
   #boot { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #f0f2f5; z-index: 100; }
@@ -1411,6 +1412,7 @@ function ProductSummaryView({ rows, psFilter, regionFilter, custFilter, groupFil
   }, fmtInt((node.quota || 0) - (node.thYtd + sumFromNow(node.mo))));
 
   return h('div', { className: 'px-6 pb-8' },
+    h(ExcelBtn, { onClick: () => exportProductSummary(data) }),
     h('div', { className: 'bg-white rounded-lg border border-slate-200 overflow-hidden' },
       h('div', { className: 'overflow-x-auto scroll-shadow' },
         h('table', { className: 'w-full border-collapse' },
@@ -1493,6 +1495,113 @@ function ProductSummaryView({ rows, psFilter, regionFilter, custFilter, groupFil
       )
     )
   );
+}
+
+// ============ XUẤT EXCEL — giữ cấu trúc phân cấp (gập/mở) + header gộp ============
+const _ec = (r, c) => window.XLSX.utils.encode_cell({ r, c });
+const _today = () => new Date().toISOString().slice(0, 10).replace(/-/g, '');
+// Áp định dạng số + kiểu cho 1 ô (SheetJS community hỗ trợ number format qua .z)
+const _fmt = (ws, r, c, z) => { const cell = ws[_ec(r, c)]; if (cell && cell.v !== '' && cell.v != null) cell.z = z; };
+
+function exportSummaryPS(data) {
+  const XLSX = window.XLSX;
+  if (!XLSX) { alert('Chưa tải được thư viện Excel, vui lòng tải lại trang rồi thử lại.'); return; }
+  const tr = v => (Number(v) || 0) / 1e6; // VND → triệu VND
+  const H1 = ['Miền / PS / Khách hàng', 'Số KH', 'Số SP', 'Quota / Số lượng', '', '', '', 'Doanh thu (triệu VND)', '', '', '', '% Chênh lệch', 'Giải trình'];
+  const H2 = ['', '', '', 'KH đầu năm', 'Thực hiện YTD', 'Khả dụng còn lại', 'SL kế hoạch', 'KH đầu năm', 'Thực hiện YTD', 'Update', 'Chênh lệch', '', ''];
+  const aoa = [H1, H2];
+  const levels = [null, null];
+  const push = (level, label, d, note) => {
+    const dt = Number(d.dt) || 0, dtUpd = Number(d.dtUpd) || 0, ch = dtUpd - dt;
+    aoa.push([
+      '   '.repeat(level) + label,
+      Number.isFinite(d.custCount) ? d.custCount : '',
+      Number.isFinite(d.prodCount) ? d.prodCount : '',
+      Math.round(d.quotaFY || 0), Math.round(d.ytd || 0), Math.round(d.quotaAvail || 0), Math.round(d.sl || 0),
+      tr(dt), tr(d.dtYtd), tr(dtUpd), tr(ch),
+      dt ? ch / dt : '', note || ''
+    ]);
+    levels.push(level);
+  };
+  for (const reg of data.regions) {
+    push(0, reg.region, reg, '');
+    for (const ps of reg.psList) {
+      push(1, ps.ps, ps, '');
+      for (const c of ps.custs) {
+        push(2, c.cust + (c.custId ? ` (${c.custId})` : ''), c, c.note);
+        for (const gp of c.grps) {
+          push(3, gp.grp, gp, '');
+          for (const pp of gp.prods) push(4, (pp.mset ? pp.mset + ' · ' : '') + pp.prod, pp, '');
+        }
+      }
+    }
+  }
+  push(0, 'TỔNG CỘNG', data.grand, '');
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 1, c: 0 } }, { s: { r: 0, c: 1 }, e: { r: 1, c: 1 } }, { s: { r: 0, c: 2 }, e: { r: 1, c: 2 } },
+    { s: { r: 0, c: 3 }, e: { r: 0, c: 6 } }, { s: { r: 0, c: 7 }, e: { r: 0, c: 10 } },
+    { s: { r: 0, c: 11 }, e: { r: 1, c: 11 } }, { s: { r: 0, c: 12 }, e: { r: 1, c: 12 } }
+  ];
+  ws['!cols'] = [{ wch: 34 }, { wch: 7 }, { wch: 7 }, { wch: 12 }, { wch: 13 }, { wch: 15 }, { wch: 12 }, { wch: 13 }, { wch: 13 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 40 }];
+  ws['!rows'] = levels.map(l => l == null ? {} : { level: l });
+  for (let r = 2; r < aoa.length; r++) {
+    for (const c of [1, 2, 3, 4, 5, 6]) _fmt(ws, r, c, '#,##0');
+    for (const c of [7, 8, 9, 10]) _fmt(ws, r, c, '#,##0.###');
+    _fmt(ws, r, 11, '+0.0%;-0.0%;0.0%');
+  }
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Tong hop theo PS');
+  XLSX.writeFile(wb, `TongHop_theo_PS_${_today()}.xlsx`);
+}
+
+function exportProductSummary(data) {
+  const XLSX = window.XLSX;
+  if (!XLSX) { alert('Chưa tải được thư viện Excel, vui lòng tải lại trang rồi thử lại.'); return; }
+  const curIdx = Math.max(0, MONTHS.indexOf(CURRENT_MONTH));
+  const conLai = mo => mo.reduce((s, v, i) => (i >= curIdx ? s + v : s), 0);
+  const H1 = ['Sản phẩm / Miền / KH', 'SL KH update theo tháng', ...Array(11).fill(''), 'Tổng Quota', 'Thực hiện YTD', 'KH còn lại YTD', 'Quota khả dụng còn lại'];
+  const H2 = ['', ...MONTH_LABELS, '', '', '', ''];
+  const aoa = [H1, H2];
+  const levels = [null, null];
+  const push = (level, label, d) => {
+    const cl = conLai(d.mo), quota = Number(d.quota) || 0, thYtd = Number(d.thYtd) || 0;
+    aoa.push([
+      '   '.repeat(level) + label,
+      ...d.mo.map(v => Math.round(v || 0)),
+      Math.round(quota), Math.round(thYtd), Math.round(cl), Math.round(quota - (thYtd + cl))
+    ]);
+    levels.push(level);
+  };
+  for (const p of data.prods) {
+    push(0, p.prod, p);
+    for (const rg of p.regs) {
+      push(1, rg.region, rg);
+      for (const cu of rg.custs) push(2, cu.cust + (cu.custId ? ` (${cu.custId})` : ''), cu);
+    }
+  }
+  push(0, 'TỔNG CỘNG', data.grand);
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 1, c: 0 } }, { s: { r: 0, c: 1 }, e: { r: 0, c: 12 } },
+    { s: { r: 0, c: 13 }, e: { r: 1, c: 13 } }, { s: { r: 0, c: 14 }, e: { r: 1, c: 14 } },
+    { s: { r: 0, c: 15 }, e: { r: 1, c: 15 } }, { s: { r: 0, c: 16 }, e: { r: 1, c: 16 } }
+  ];
+  ws['!cols'] = [{ wch: 34 }, ...Array(12).fill({ wch: 7 }), { wch: 11 }, { wch: 13 }, { wch: 14 }, { wch: 18 }];
+  ws['!rows'] = levels.map(l => l == null ? {} : { level: l });
+  for (let r = 2; r < aoa.length; r++) for (let c = 1; c <= 16; c++) _fmt(ws, r, c, '#,##0');
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Tong hop theo SP');
+  XLSX.writeFile(wb, `TongHop_theo_SP_${_today()}.xlsx`);
+}
+
+function ExcelBtn({ onClick }) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-end mb-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: onClick,
+    className: "inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium text-emerald-700 bg-white border border-emerald-200 rounded-md hover:bg-emerald-50 shadow-sm"
+  }, /*#__PURE__*/React.createElement(Download, { size: 14 }), "Xuất Excel (giữ cấu trúc)"));
 }
 
 // ============ SUMMARY (Tổng hợp theo Miền / PS / Khách hàng) ============
@@ -1662,7 +1771,9 @@ function SummaryView({
   const chG = g.dtUpd - g.dt;
   return /*#__PURE__*/React.createElement("div", {
     className: "px-6 pb-8"
-  }, /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(ExcelBtn, {
+    onClick: () => exportSummaryPS(data)
+  }), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-lg border border-slate-200 overflow-hidden"
   }, /*#__PURE__*/React.createElement("div", {
     className: "overflow-x-auto scroll-shadow"
