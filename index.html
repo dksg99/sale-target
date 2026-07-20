@@ -1193,7 +1193,6 @@ function CustomerCard({
   groups,
   pendingKeys,
   onCommit,
-  onAddProduct,
   canEdit,
   defaultOpen,
   showBasePlan,
@@ -1240,9 +1239,7 @@ function CustomerCard({
   }, /*#__PURE__*/React.createElement("div", {
     className: "bg-[#1877f2] text-white px-3 py-3 flex flex-col items-center justify-center min-w-[88px]"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "text-[10px] uppercase tracking-wide opacity-80"
-  }, "KH FY26"), /*#__PURE__*/React.createElement("div", {
-    className: "text-[10px] opacity-70 mt-1 font-mono"
+    className: "text-[11px] opacity-90 font-mono"
   }, custId)), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 flex items-center gap-4 px-4 py-3 hover:bg-slate-50/60 min-w-0"
   }, open ? /*#__PURE__*/React.createElement(ChevronDown, {
@@ -1289,20 +1286,8 @@ function CustomerCard({
     values: stats.monthlyDt
   }), /*#__PURE__*/React.createElement("div", {
     className: "text-[10px] text-slate-400 leading-tight"
-  }, "DThu", /*#__PURE__*/React.createElement("br", null), "12 tháng"))))), open && /*#__PURE__*/React.createElement("div", null, onAddProduct && /*#__PURE__*/React.createElement("div", {
-    className: "px-4 py-1.5 border-b border-slate-100 bg-white"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => onAddProduct({
-      customer,
-      custId,
-      ps: psList && psList[0] || '',
-      region
-    }),
-    className: "inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] text-emerald-700 hover:bg-emerald-50 rounded-md border border-emerald-200"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "text-[14px] leading-none"
-  }, "+"), " Thêm sản phẩm")), groups.map(g => /*#__PURE__*/React.createElement(ProductGroupSection, {
-    key: g.name,
+  }, "DThu", /*#__PURE__*/React.createElement("br", null), "12 tháng"))))), open && /*#__PURE__*/React.createElement("div", null, groups.map(g => /*#__PURE__*/React.createElement(ProductGroupSection, {
+    key: g.name + '||' + (g.ps || ''),
     groupName: g.name,
     ps: g.ps,
     note: g.note,
@@ -1898,111 +1883,7 @@ function SummaryGroupRow({
   }))));
 }
 
-// ============ ADD PRODUCT MODAL ============
-function AddProductModal({
-  catalog,
-  customer,
-  onClose,
-  onConfirm
-}) {
-  const [grp, setGrp] = useState('');
-  const [mset, setMset] = useState('');
-  const [prod, setProd] = useState('');
-  const [busy, setBusy] = useState(false);
-  const groups = useMemo(() => Array.from(new Set(catalog.map(c => c.grp).filter(Boolean))).sort(), [catalog]);
-  const msets = useMemo(() => Array.from(new Set(catalog.filter(c => c.grp === grp).map(c => c.mset).filter(Boolean))).sort(), [catalog, grp]);
-  const prods = useMemo(() => catalog.filter(c => c.grp === grp && (msets.length === 0 || c.mset === mset)), [catalog, grp, mset, msets]);
-  const selected = useMemo(() => prods.find(c => c.prod === prod), [prods, prod]);
-  const confirm = async () => {
-    if (!prod || !selected) return;
-    setBusy(true);
-    await onConfirm({
-      custId: customer.custId,
-      cust: customer.customer,
-      ps: customer.ps,
-      region: customer.region,
-      grp: selected.grp,
-      mset: selected.mset,
-      prod: selected.prod,
-      price: selected.price
-    });
-    setBusy(false);
-  };
-  return /*#__PURE__*/React.createElement("div", {
-    className: "fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-50 flex items-center justify-center p-4",
-    onClick: onClose
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-white rounded-xl shadow-2xl p-6 max-w-md w-full",
-    onClick: e => e.stopPropagation()
-  }, /*#__PURE__*/React.createElement("h3", {
-    className: "font-semibold text-[15px]"
-  }, "Thêm sản phẩm"), /*#__PURE__*/React.createElement("p", {
-    className: "text-[12px] text-slate-500 mt-0.5 mb-4"
-  }, "cho ", /*#__PURE__*/React.createElement("span", {
-    className: "font-medium text-slate-700"
-  }, customer.customer), " · ", customer.ps), /*#__PURE__*/React.createElement("label", {
-    className: "block text-[11px] uppercase tracking-wide text-slate-500 font-medium mb-1"
-  }, "Nhóm sản phẩm"), /*#__PURE__*/React.createElement("select", {
-    value: grp,
-    onChange: e => {
-      setGrp(e.target.value);
-      setMset('');
-      setProd('');
-    },
-    className: "w-full mb-3 px-3 py-2 text-[13px] border border-slate-200 rounded-md outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
-  }, /*#__PURE__*/React.createElement("option", {
-    value: ""
-  }, "— Chọn nhóm —"), groups.map(g => /*#__PURE__*/React.createElement("option", {
-    key: g,
-    value: g
-  }, g))), msets.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
-    className: "block text-[11px] uppercase tracking-wide text-slate-500 font-medium mb-1"
-  }, "Bộ vật tư"), /*#__PURE__*/React.createElement("select", {
-    value: mset,
-    onChange: e => {
-      setMset(e.target.value);
-      setProd('');
-    },
-    disabled: !grp,
-    className: "w-full mb-3 px-3 py-2 text-[13px] border border-slate-200 rounded-md outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-50"
-  }, /*#__PURE__*/React.createElement("option", {
-    value: ""
-  }, "— Chọn bộ vật tư —"), msets.map(m => /*#__PURE__*/React.createElement("option", {
-    key: m,
-    value: m
-  }, m)))), /*#__PURE__*/React.createElement("label", {
-    className: "block text-[11px] uppercase tracking-wide text-slate-500 font-medium mb-1"
-  }, "Sản phẩm"), /*#__PURE__*/React.createElement("select", {
-    value: prod,
-    onChange: e => setProd(e.target.value),
-    disabled: !grp,
-    className: "w-full mb-3 px-3 py-2 text-[13px] border border-slate-200 rounded-md outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-50"
-  }, /*#__PURE__*/React.createElement("option", {
-    value: ""
-  }, "— Chọn sản phẩm —"), prods.map((c, i) => /*#__PURE__*/React.createElement("option", {
-    key: c.prod + i,
-    value: c.prod
-  }, c.prod))), selected && /*#__PURE__*/React.createElement("div", {
-    className: "bg-slate-50 rounded-md px-3 py-2 mb-4 text-[12px] text-slate-600"
-  }, "Đơn giá: ", /*#__PURE__*/React.createElement("span", {
-    className: "font-semibold text-slate-800"
-  }, moneyPrice(selected.price), " tr.VND"), " · sẽ tạo 12 dòng (T4→T3), số lượng = 0"), /*#__PURE__*/React.createElement("div", {
-    className: "flex justify-end gap-2"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: onClose,
-    disabled: busy,
-    className: "px-3 py-1.5 text-[13px] text-slate-600 hover:bg-slate-100 rounded-md disabled:opacity-50"
-  }, "Hủy"), /*#__PURE__*/React.createElement("button", {
-    onClick: confirm,
-    disabled: busy || !prod,
-    className: "flex items-center gap-1.5 px-4 py-1.5 text-[13px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-md disabled:opacity-50"
-  }, busy ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Loader2, {
-    size: 14,
-    className: "animate-spin"
-  }), " Đang thêm…") : 'Thêm sản phẩm'))));
-}
-
-// ============ ADD PRODUCT PANEL (inline — nằm ngay dưới bộ lọc) ============
+// ============ ADD PRODUCT PANEL (inline — nằm ngay dưới bộ lọc, chỉ giữ ở đây) ============
 // Cho phép chọn khách hàng từ danh sách rồi thêm sản phẩm, không cần mở từng KH.
 function AddProductPanel({
   catalog,
@@ -2161,7 +2042,6 @@ function App() {
   const [custFilter, setCustFilter] = useState('all');
   const [fields, setFields] = useState([]);
   const [catalog, setCatalog] = useState([]);
-  const [addFor, setAddFor] = useState(null);
   const [dataRev, setDataRev] = useState(0);
   const [stale, setStale] = useState(false);
   const [maskMoney, setMaskMoney] = useState(true);
@@ -2236,11 +2116,9 @@ function App() {
   const addProduct = useCallback(async sel => {
     try {
       await api('addProduct', sel);
-      setAddFor(null);
       await loadData();
     } catch (err) {
       setError('Thêm sản phẩm thất bại: ' + err.message);
-      setAddFor(null);
     }
   }, [loadData]);
 
@@ -2418,9 +2296,11 @@ function App() {
       });
       const c = byCust.get(cKey);
       if (r.ps) c.psSet.add(r.ps);
-      const gKey = r.grp || 'Khác';
+      const grpName = r.grp || 'Khác';
+      // Tách theo (nhóm SP, PS): 1 nhóm SP mà 2 PS cùng phụ trách → 2 dòng độc lập, không gộp.
+      const gKey = grpName + '||' + (r.ps || '');
       if (!c.gMap.has(gKey)) c.gMap.set(gKey, {
-        name: gKey,
+        name: grpName,
         ps: r.ps,
         note: '',
         aprRow: null,
@@ -2829,16 +2709,10 @@ function App() {
     pendingKeys: draftKeys,
     onCommit: commit,
     canEdit: canEdit,
-    onAddProduct: canEdit && catalog.length ? setAddFor : null,
     defaultOpen: false,
     showBasePlan: showBasePlan,
     onToggleBasePlan: () => setShowBasePlan(v => !v)
-  })))), addFor && /*#__PURE__*/React.createElement(AddProductModal, {
-    catalog: catalog,
-    customer: addFor,
-    onClose: () => setAddFor(null),
-    onConfirm: addProduct
-  }));
+  })))));
 }
 function TabBtn({
   active,
