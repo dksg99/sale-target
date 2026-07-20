@@ -201,6 +201,24 @@ Deno.serve(async (req) => {
       return json({ ok: true, catalog });
     }
 
+    if (action === "getCustomers") {
+      // Danh mục khách hàng ĐẦY ĐỦ từ dm_khach_hang (không giới hạn theo dữ liệu sale_target).
+      // Phân trang vì PostgREST giới hạn 1000 dòng/lần.
+      const out = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await db.from("dm_khach_hang")
+          .select("customer_id, customer_name")
+          .order("customer_id", { ascending: true })
+          .range(from, from + PAGE - 1);
+        if (error) throw new Error(error.message);
+        if (!data || data.length === 0) break;
+        for (const c of data) out.push({ custId: c.customer_id ?? "", cust: c.customer_name ?? "" });
+        if (data.length < PAGE) break;
+      }
+      const customers = out.filter((c) => c.cust || c.custId);
+      return json({ ok: true, customers });
+    }
+
     if (action === "updateCells") {
       if (!canEdit) return json({ ok: false, error: "forbidden" }, 403);
       const updates = payload.updates || [];

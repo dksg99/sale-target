@@ -2050,14 +2050,77 @@ function SummaryGroupRow({
 
 // ============ ADD PRODUCT PANEL (inline — nằm ngay dưới bộ lọc, chỉ giữ ở đây) ============
 // Cho phép chọn khách hàng từ danh sách rồi thêm sản phẩm, không cần mở từng KH.
+// Dropdown khách hàng có ô tìm kiếm gần đúng (theo tên hoặc mã KH, bỏ dấu).
+function CustomerPicker({ customers, value, onChange, className }) {
+  const h = React.createElement;
+  const [q, setQ] = useState('');
+  const [open, setOpen] = useState(false);
+  const [hi, setHi] = useState(0);
+  const boxRef = useRef(null);
+  const norm = s => (s == null ? '' : String(s)).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd');
+  const selected = useMemo(() => customers.find(c => (c.custId || c.cust) === value), [customers, value]);
+  const results = useMemo(() => {
+    const nq = norm(q).trim();
+    if (!nq) return customers.slice(0, 80);
+    const toks = nq.split(/\s+/).filter(Boolean);
+    return customers.filter(c => {
+      const hay = norm((c.cust || '') + ' ' + (c.custId || ''));
+      return toks.every(t => hay.includes(t)); // khớp gần đúng: mọi từ khoá đều xuất hiện
+    }).slice(0, 80);
+  }, [customers, q]);
+  useEffect(() => { setHi(0); }, [q, open]);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = e => { if (boxRef.current && !boxRef.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+  const pick = c => { onChange(c.custId || c.cust); setOpen(false); setQ(''); };
+  const display = selected ? (selected.cust + (selected.custId ? ' · ' + selected.custId : '')) : '';
+  return h("div", { ref: boxRef, className: "relative" },
+    h("input", {
+      value: open ? q : display,
+      onChange: e => { setQ(e.target.value); setOpen(true); },
+      onFocus: () => { setOpen(true); setQ(''); },
+      onKeyDown: e => {
+        if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true); setHi(i => Math.min(i + 1, results.length - 1)); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); setHi(i => Math.max(i - 1, 0)); }
+        else if (e.key === 'Enter') { if (open && results[hi]) { e.preventDefault(); pick(results[hi]); } }
+        else if (e.key === 'Escape') { setOpen(false); }
+      },
+      placeholder: `Tìm theo tên hoặc mã KH… (${customers.length})`,
+      className: className
+    }),
+    open && h("div", {
+      className: "absolute z-20 mt-1 left-0 right-0 bg-white border border-slate-200 rounded-md shadow-lg max-h-64 overflow-y-auto"
+    },
+      results.length === 0
+        ? h("div", { className: "px-3 py-2 text-[12px] text-slate-400" }, "Không tìm thấy khách hàng")
+        : results.map((c, i) => h("div", {
+            key: (c.custId || c.cust) + '#' + i,
+            onMouseDown: e => { e.preventDefault(); pick(c); },
+            onMouseEnter: () => setHi(i),
+            className: `px-3 py-1.5 text-[12.5px] cursor-pointer flex items-center justify-between gap-2 ${i === hi ? 'bg-emerald-50' : 'hover:bg-slate-50'}`
+          },
+          h("span", { className: "font-medium text-slate-800 truncate" }, c.cust || '—'),
+          c.custId && h("span", { className: "text-slate-400 text-[11px] font-mono flex-shrink-0" }, c.custId)
+        ))
+    )
+  );
+}
+
 function AddProductPanel({
   catalog,
   customers,
+  psOptions,
+  regionOptions,
   onConfirm
 }) {
   const h = React.createElement;
   const [open, setOpen] = useState(false);
   const [custKey, setCustKey] = useState('');
+  const [ps, setPs] = useState('');
+  const [region, setRegion] = useState('');
   const [grp, setGrp] = useState('');
   const [mset, setMset] = useState('');
   const [prod, setProd] = useState('');
@@ -2071,21 +2134,21 @@ function AddProductPanel({
   const lbl = "block text-[10.5px] uppercase tracking-wide text-slate-500 font-medium mb-1";
   const sel = "w-full px-2.5 py-2 text-[13px] border border-slate-200 rounded-md bg-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-50";
   const confirm = async () => {
-    if (!cust || !prod || !selected) return;
+    if (!cust || !ps || !region || !prod || !selected) return;
     setBusy(true);
     setDone('');
     await onConfirm({
       custId: cust.custId,
       cust: cust.cust,
-      ps: cust.ps,
-      region: cust.region,
+      ps: ps,
+      region: region,
       grp: selected.grp,
       mset: selected.mset,
       prod: selected.prod,
       price: selected.price
     });
     setBusy(false);
-    setDone(`Đã thêm "${selected.prod}" cho ${cust.cust}`);
+    setDone(`Đã thêm "${selected.prod}" cho ${cust.cust} (PS ${ps})`);
     setProd('');
   };
   return h("div", {
@@ -2106,19 +2169,39 @@ function AddProductPanel({
   }, "· chọn khách hàng rồi chọn sản phẩm")), open && h("div", {
     className: "px-3 pb-3 pt-2 border-t border-slate-100"
   }, h("div", {
-    className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5"
+    className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5"
   }, h("div", null, h("label", {
     className: lbl
-  }, "Khách hàng"), h("select", {
+  }, "Khách hàng"), h(CustomerPicker, {
+    customers: customers,
     value: custKey,
-    onChange: e => setCustKey(e.target.value),
+    onChange: setCustKey,
+    className: sel
+  })), h("div", null, h("label", {
+    className: lbl
+  }, "PS phụ trách"), h("select", {
+    value: ps,
+    onChange: e => setPs(e.target.value),
+    disabled: !cust,
     className: sel
   }, h("option", {
     value: ""
-  }, `— Chọn khách hàng (${customers.length}) —`), customers.map((c, i) => h("option", {
-    key: (c.custId || c.cust) + i,
-    value: c.custId || c.cust
-  }, c.cust + (c.ps ? ' · ' + c.ps : ''))))), h("div", null, h("label", {
+  }, "— Chọn PS —"), (psOptions || []).map(p => h("option", {
+    key: p,
+    value: p
+  }, p)))), h("div", null, h("label", {
+    className: lbl
+  }, "Miền"), h("select", {
+    value: region,
+    onChange: e => setRegion(e.target.value),
+    disabled: !cust,
+    className: sel
+  }, h("option", {
+    value: ""
+  }, "— Chọn miền —"), (regionOptions || []).map(r => h("option", {
+    key: r,
+    value: r
+  }, r)))), h("div", null, h("label", {
     className: lbl
   }, "Nhóm sản phẩm"), h("select", {
     value: grp,
@@ -2173,7 +2256,7 @@ function AddProductPanel({
     className: "text-[12px] text-emerald-600"
   }, done), h("button", {
     onClick: confirm,
-    disabled: busy || !cust || !prod,
+    disabled: busy || !cust || !ps || !region || !prod,
     className: "flex items-center gap-1.5 px-4 py-1.5 text-[13px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-md disabled:opacity-50"
   }, busy ? h(React.Fragment, null, h(Loader2, {
     size: 14,
@@ -2207,6 +2290,7 @@ function App() {
   const [custFilter, setCustFilter] = useState('all');
   const [fields, setFields] = useState([]);
   const [catalog, setCatalog] = useState([]);
+  const [customers, setCustomers] = useState([]); // danh mục KH đầy đủ từ dm_khach_hang
   const [dataRev, setDataRev] = useState(0);
   const [stale, setStale] = useState(false);
   const [maskMoney, setMaskMoney] = useState(true);
@@ -2273,10 +2357,11 @@ function App() {
     if (authed) loadData();
   }, [authed, loadData]);
 
-  // tải danh mục (Catalog) để thêm sản phẩm
+  // tải danh mục (Catalog) + danh mục khách hàng (dm_khach_hang) để thêm sản phẩm
   useEffect(() => {
     if (!authed) return;
     api('getCatalog').then(r => setCatalog(r.catalog || [])).catch(() => {});
+    api('getCustomers').then(r => setCustomers(r.customers || [])).catch(() => {});
   }, [authed]);
   const addProduct = useCallback(async sel => {
     try {
@@ -2427,21 +2512,19 @@ function App() {
       id
     })).sort((a, b) => a.cust.localeCompare(b.cust));
   }, [rows, psFilter, regionFilter]);
-  // Danh sách KH đầy đủ (kèm ps/miền/mã) cho panel "Thêm sản phẩm" chọn khách hàng.
-  const custPickList = useMemo(() => {
+  // Danh sách PS đầy đủ (không lọc) cho panel "Thêm sản phẩm" — vì dm_khach_hang không có PS.
+  const allPsList = useMemo(() => Array.from(new Set(rows.map(r => r.ps).filter(Boolean))).sort(), [rows]);
+  // Nguồn KH cho panel thêm SP: ưu tiên dm_khach_hang (getCustomers); nếu backend chưa
+  // deploy action này thì tạm fallback về danh sách KH suy ra từ dữ liệu hiện có.
+  const custSource = useMemo(() => {
+    if (customers.length) return customers;
     const m = new Map();
     rows.forEach(r => {
-      if (regionFilter !== 'all' && r.region !== regionFilter) return;
-      if (psFilter !== 'all' && r.ps !== psFilter) return;
-      if (r.cust && !m.has(r.cust)) m.set(r.cust, {
-        cust: r.cust,
-        custId: r.custId || '',
-        ps: r.ps || '',
-        region: r.region || ''
-      });
+      const k = r.custId || r.cust;
+      if (r.cust && !m.has(k)) m.set(k, { cust: r.cust, custId: r.custId || '' });
     });
     return Array.from(m.values()).sort((a, b) => a.cust.localeCompare(b.cust));
-  }, [rows, psFilter, regionFilter]);
+  }, [customers, rows]);
   const tree = useMemo(() => {
     const q = search.toLowerCase().trim();
     const byCust = new Map();
@@ -2848,9 +2931,11 @@ function App() {
     onChange: e => setSearch(e.target.value),
     placeholder: "Tìm KH, sản phẩm, bộ vật tư…",
     className: "pl-8 pr-3 py-1.5 text-[13px] border border-slate-200 rounded-md w-64 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
-  })))), canEdit && catalog.length > 0 && custPickList.length > 0 && tab === 'detail' ? /*#__PURE__*/React.createElement(AddProductPanel, {
+  })))), canEdit && catalog.length > 0 && custSource.length > 0 && tab === 'detail' ? /*#__PURE__*/React.createElement(AddProductPanel, {
     catalog: catalog,
-    customers: custPickList,
+    customers: custSource,
+    psOptions: allPsList,
+    regionOptions: regionList,
     onConfirm: addProduct
   }) : null, tab === 'summary' ? /*#__PURE__*/React.createElement(SummaryView, {
     rows: effectiveRows,
