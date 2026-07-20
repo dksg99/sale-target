@@ -696,26 +696,22 @@ function ProductRow({
     let q14 = 0,
       qMain = 0,
       qAdd = 0,
-      mMain = '',
-      mAdd = '',
       price = 0;
     allRows.forEach(r => {
       q14 += Number(r.qOld) || 0;
       qMain += Number(r.qMain) || 0;
       qAdd += Number(r.qAdd) || 0;
-      if (!mMain && r.mMain) mMain = r.mMain;
-      if (!mAdd && r.mAdd) mAdd = r.mAdd;
       if (!price && r.price) price = Number(r.price) || 0; // hiển thị đơn giá đại diện
     });
     let revBase = 0,
-      revUpd = 0,
+      slUpd = 0,   // tổng SL update = thực hiện YTD (quá khứ) + SL KH update các tháng còn lại
       ytd = 0,
       dtBase = 0,
       dtUpd = 0;
     monthly.forEach((c, i) => {
       revBase += c.rev;
       const past = MONTHS[i] < CURRENT_MONTH;
-      revUpd += past ? c.act : c.hasUpd ? c.revUpd : c.rev;
+      slUpd += past ? c.act : c.hasUpd ? c.revUpd : c.rev;
       if (past) ytd += c.act; // Thực hiện YTD = tổng SL thực hiện các tháng đã qua
       // doanh thu tính theo ĐƠN GIÁ TỪNG DÒNG
       c.rows.forEach(r => {
@@ -725,17 +721,17 @@ function ProductRow({
         dtUpd += upd * pr;
       });
     });
-    const totalQuotaFY = q14 + qMain + qAdd;
+    const totalQuota = q14 + qMain + qAdd;
     return {
       q14,
-      mMain,
       qMain,
-      mAdd,
       qAdd,
       ytd,
+      slUpd,
       price,
-      totalQuotaFY,
-      quotaAvailable: totalQuotaFY - ytd,
+      totalQuota,
+      // Quota khả dụng còn lại = tổng quota − tổng SL update (thực hiện YTD + KH update các tháng còn lại)
+      quotaAvailable: totalQuota - slUpd,
       dtBase,
       dtUpd,
       chenh: dtUpd - dtBase
@@ -815,27 +811,11 @@ function ProductRow({
     width: 72,
     bg: "bg-blue-50/20"
   }), /*#__PURE__*/React.createElement(EditableCell, {
-    value: stats.mMain,
-    pending: pend('mMain'),
-    locked: !canEdit,
-    onCommit: v => commitProductField('mMain', v, true),
-    width: 70,
-    type: "text",
-    bg: "bg-blue-50/20"
-  }), /*#__PURE__*/React.createElement(EditableCell, {
     value: stats.qMain,
     pending: pend('qMain'),
     locked: !canEdit,
     onCommit: v => commitProductField('qMain', v),
     width: 80,
-    bg: "bg-blue-50/20"
-  }), /*#__PURE__*/React.createElement(EditableCell, {
-    value: stats.mAdd,
-    pending: pend('mAdd'),
-    locked: !canEdit,
-    onCommit: v => commitProductField('mAdd', v, true),
-    width: 70,
-    type: "text",
     bg: "bg-blue-50/20"
   }), /*#__PURE__*/React.createElement(EditableCell, {
     value: stats.qAdd,
@@ -849,7 +829,7 @@ function ProductRow({
     style: {
       width: 90
     }
-  }, fmtInt(stats.totalQuotaFY)), /*#__PURE__*/React.createElement("td", {
+  }, fmtInt(stats.totalQuota)), /*#__PURE__*/React.createElement("td", {
     className: "px-2 py-1.5 text-[12px] text-right tabular-nums text-slate-600 border-r border-b border-slate-100 bg-orange-50/40",
     style: {
       width: 90
@@ -857,7 +837,7 @@ function ProductRow({
   }, fmtInt(stats.ytd)), /*#__PURE__*/React.createElement("td", {
     className: "px-2 py-1.5 text-[12px] text-right tabular-nums text-slate-700 font-medium border-r border-b border-slate-100 bg-slate-50/60",
     style: {
-      width: 95
+      width: 110
     }
   }, fmtInt(stats.quotaAvailable)), /*#__PURE__*/React.createElement(PriceCell, {
     value: stats.price,
@@ -911,6 +891,33 @@ function ProductRow({
   }, stats.chenh === 0 ? '—' : MASK_MONEY ? '•••' : (stats.chenh > 0 ? '+' : '') + fmtTy3(stats.chenh)));
 }
 
+// ============ Ô nhập tháng thầu (áp cho cả nhóm SP) — định dạng bắt buộc yyyy-mm ============
+function GroupMonthField({ label, value, pending, locked, onCommit }) {
+  const h = React.createElement;
+  const [draft, setDraft] = useState(value || '');
+  const [err, setErr] = useState(false);
+  useEffect(() => { setDraft(value || ''); }, [value]);
+  const commit = () => {
+    const v = (draft || '').trim();
+    if (v === (value || '')) { setErr(false); return; }
+    if (v !== '' && !/^\d{4}-\d{2}$/.test(v)) { setErr(true); return; } // giữ định dạng yyyy-mm
+    setErr(false);
+    onCommit(v);
+  };
+  return h("div", { className: "flex items-center gap-1.5" },
+    h("span", { className: "text-[10.5px] font-semibold text-blue-800 uppercase tracking-wide whitespace-nowrap" }, label),
+    h("input", {
+      value: draft,
+      onChange: e => setDraft(e.target.value),
+      onBlur: commit,
+      disabled: locked,
+      placeholder: "yyyy-mm",
+      className: `w-[92px] text-[12px] px-2 py-1 rounded-md border outline-none ${err ? 'border-red-400 bg-red-50 ring-1 ring-red-200' : pending ? 'border-amber-400 bg-amber-50 ring-1 ring-amber-200' : 'border-slate-200 bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100'}`
+    }),
+    err && h("span", { className: "text-[10px] text-red-500 whitespace-nowrap" }, "yyyy-mm")
+  );
+}
+
 // ============ PRODUCT GROUP (Nhóm SP) — 1 bảng, Bộ vật tư là cột ============
 function ProductGroupSection({
   groupName,
@@ -936,6 +943,17 @@ function ProductGroupSection({
       key: 'note',
       value: noteDraft
     }]);
+  };
+  // Tháng thầu chính / bổ sung: 1 ô áp cho cả nhóm SP (ghi vào mọi dòng của nhóm).
+  const groupRows = useMemo(() => products.flatMap(p => p.monthly.flatMap(c => c.rows)), [products]);
+  const readGroupField = key => {
+    for (const r of groupRows) if (r[key]) return r[key];
+    return '';
+  };
+  const pendGroupField = key => groupRows.some(r => pendingKeys.has(`${r._row}:${key}`));
+  const commitGroupField = (key, value) => {
+    if (!groupRows.length) return;
+    onCommit(groupRows.map(r => ({ row: r._row, key, value })));
   };
   // thống kê cấp nhóm SP
   const gs = useMemo(() => {
@@ -1008,6 +1026,20 @@ function ProductGroupSection({
   }, "Chênh lệch"), /*#__PURE__*/React.createElement("div", {
     className: `text-[12px] font-semibold tabular-nums ${gs.chenh > 0 ? 'text-emerald-700' : gs.chenh < 0 ? 'text-red-600' : 'text-slate-400'}`
   }, gs.chenh === 0 ? '—' : MASK_MONEY ? '•••' : (gs.chenh > 0 ? '+' : '') + fmtTy3(gs.chenh))))), open && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "px-4 py-2 bg-blue-50/40 border-b border-blue-100 flex flex-wrap items-center gap-x-6 gap-y-2"
+  }, /*#__PURE__*/React.createElement(GroupMonthField, {
+    label: "Tháng thầu chính",
+    value: readGroupField('mMain'),
+    pending: pendGroupField('mMain'),
+    locked: !canEdit,
+    onCommit: v => commitGroupField('mMain', v)
+  }), /*#__PURE__*/React.createElement(GroupMonthField, {
+    label: "Tháng thầu bổ sung",
+    value: readGroupField('mAdd'),
+    pending: pendGroupField('mAdd'),
+    locked: !canEdit,
+    onCommit: v => commitGroupField('mAdd', v)
+  })), /*#__PURE__*/React.createElement("div", {
     className: "px-4 py-2 bg-amber-50/40 border-b border-amber-100 flex items-start gap-2"
   }, /*#__PURE__*/React.createElement("span", {
     className: "text-[10.5px] font-semibold text-amber-800 uppercase tracking-wide pt-1.5 flex-shrink-0"
@@ -1051,23 +1083,11 @@ function ProductGroupSection({
     }
   }, "Quota 1/4 ✏"), /*#__PURE__*/React.createElement("th", {
     rowSpan: 2,
-    className: "px-1.5 py-1.5 text-left text-[10px] font-semibold uppercase text-blue-700 border-r border-b border-slate-200 bg-blue-50/40 align-bottom",
-    style: {
-      width: 70
-    }
-  }, "Th.thầu chính ✏"), /*#__PURE__*/React.createElement("th", {
-    rowSpan: 2,
     className: "px-1.5 py-1.5 text-right text-[10px] font-semibold uppercase text-blue-700 border-r border-b border-slate-200 bg-blue-50/40 align-bottom",
     style: {
       width: 80
     }
   }, "Quota thầu chính ✏"), /*#__PURE__*/React.createElement("th", {
-    rowSpan: 2,
-    className: "px-1.5 py-1.5 text-left text-[10px] font-semibold uppercase text-blue-700 border-r border-b border-slate-200 bg-blue-50/40 align-bottom",
-    style: {
-      width: 70
-    }
-  }, "Th.thầu BS ✏"), /*#__PURE__*/React.createElement("th", {
     rowSpan: 2,
     className: "px-1.5 py-1.5 text-right text-[10px] font-semibold uppercase text-blue-700 border-r border-b border-slate-200 bg-blue-50/40 align-bottom",
     style: {
@@ -1079,7 +1099,7 @@ function ProductGroupSection({
     style: {
       width: 90
     }
-  }, "Tổng Quota FY"), /*#__PURE__*/React.createElement("th", {
+  }, "Tổng Quota"), /*#__PURE__*/React.createElement("th", {
     rowSpan: 2,
     className: "px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wide text-orange-700 border-r border-b border-slate-200 bg-orange-50/40 align-bottom",
     style: {
@@ -1089,9 +1109,9 @@ function ProductGroupSection({
     rowSpan: 2,
     className: "px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wide text-slate-500 border-r border-b border-slate-200 align-bottom",
     style: {
-      width: 95
+      width: 110
     }
-  }, "Quota khả dụng"), /*#__PURE__*/React.createElement("th", {
+  }, "Quota khả dụng còn lại"), /*#__PURE__*/React.createElement("th", {
     rowSpan: 2,
     className: "px-2 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wide text-amber-700 border-r border-b border-slate-200 bg-amber-50/40 align-bottom",
     style: {
