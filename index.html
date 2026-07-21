@@ -2312,7 +2312,9 @@ function App() {
           bu: r.bu,
           ho_ten: r.ho_ten || r.hoTen || ''
         });
-        setViewBu(r.bu || '');
+        // admin/manager mặc định xem TẤT CẢ team (viewBu=''); role khác giữ bu của họ.
+        // (Trước đây set = r.bu khiến manager bị lọc theo bu cá nhân -> 0 dòng.)
+        setViewBu(canSwitchTeam(r.role) ? '' : (r.bu || ''));
         setAuthed(true);
       }).catch(() => {
         sessionStorage.removeItem(TOK_KEY);
