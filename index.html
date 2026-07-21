@@ -2299,6 +2299,10 @@ function App() {
   const canEdit = auth.role === 'admin' || auth.role === 'ps';
   const isAdmin = auth.role === 'admin';
   useEffect(() => {
+    // Bypass đăng nhập khi vào từ portal: nếu có token dùng chung (vmed_token) mà tab
+    // chưa có phiên riêng -> nạp token chung vào sessionStorage để api() dùng.
+    const shared = localStorage.getItem('vmed_token');
+    if (shared && !sessionStorage.getItem(TOK_KEY)) sessionStorage.setItem(TOK_KEY, shared);
     if (sessionStorage.getItem(TOK_KEY)) {
       api('ping').then(r => {
         setAuth({
