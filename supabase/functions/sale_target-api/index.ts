@@ -3,7 +3,7 @@
 // Body: { action, token, payload }
 //
 // Deploy:  supabase functions deploy api --no-verify-jwt
-// Cần secret: supabase secrets set SESSION_SECRET=<chuoi_bi_mat_dai>  (GIỐNG login)
+// Cần secret: supabase secrets set TOKEN_SECRET=<chuoi_bi_mat_dai>  (GIỐNG login, CHUẨN CHUNG mọi app)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -37,8 +37,16 @@ async function verifyToken(token, secret) {
     const jsonStr = new TextDecoder("utf-8").decode(bytes);
     payload = JSON.parse(jsonStr);
   } catch { return null; }
-  if (!payload.exp || Date.now() > payload.exp) return null;
-  return payload; // { u, r, s, b, exp }  -- b = bu (team)
+  if (!payload.exp || Math.floor(Date.now() / 1000) > payload.exp) return null; // exp: giây (chuẩn chung)
+  // Token chuẩn chung dùng key đầy đủ -> map về {u,r,s,b} cho code bên dưới.
+  // Vẫn nhận token cũ {u,r,s,b} để không gãy trong lúc chuyển đổi.
+  return {
+    u: payload.username ?? payload.u,
+    r: payload.role ?? payload.r,
+    s: payload.scope ?? payload.s,
+    b: payload.bu ?? payload.b,
+    exp: payload.exp,
+  };
 }
 
 // ---- Mapping field key (app) <-> cột Supabase ----
@@ -151,8 +159,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ ok: false, error: "method" }, 405);
 
-  const secret = Deno.env.get("SESSION_SECRET");
-  if (!secret) return json({ ok: false, error: "SESSION_SECRET chua duoc set" }, 500);
+  const secret = Deno.env.get("TOKEN_SECRET");
+  if (!secret) return json({ ok: false, error: "TOKEN_SECRET chua duoc set" }, 500);
 
   let body;
   try { body = await req.json(); } catch { return json({ ok: false, error: "bad_body" }, 400); }

@@ -3,7 +3,7 @@
 // rồi phát hành token có CHỮ KÝ HMAC để các function khác xác thực được.
 //
 // Deploy:  supabase functions deploy login --no-verify-jwt
-// Cần secret: supabase secrets set SESSION_SECRET=<chuoi_bi_mat_dai>
+// Cần secret: supabase secrets set TOKEN_SECRET=<chuoi_bi_mat_dai>  (CHUẨN CHUNG mọi app)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -51,8 +51,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ ok: false, error: "method" }, 405);
 
-  const secret = Deno.env.get("SESSION_SECRET");
-  if (!secret) return json({ ok: false, error: "SESSION_SECRET chua duoc set" }, 500);
+  // Chuẩn chung: dùng TOKEN_SECRET cho tất cả app trong project (thay cho SESSION_SECRET).
+  const secret = Deno.env.get("TOKEN_SECRET");
+  if (!secret) return json({ ok: false, error: "TOKEN_SECRET chua duoc set" }, 500);
 
   let body;
   try { body = await req.json(); } catch { return json({ ok: false, error: "bad_body" }, 400); }
@@ -67,13 +68,15 @@ Deno.serve(async (req) => {
 
   const { data: user, error } = await admin
     .from("users")
-    .select("username, password_hash, role, scope, bu")   // thêm bu
+    .select("username, password_hash, salt, role, scope, bu, mien, ho_va_ten")
     .eq("username", username)
     .maybeSingle();
 
   if (error || !user) return json({ ok: false, error: "invalid" }, 401);
 
-  const inputHash = await sha256Hex(password);
+  // Hash chuẩn chung: có salt -> SHA256(salt:pw); không salt -> SHA256(pw)
+  const toHash = user.salt ? (user.salt + ":" + password) : password;
+  const inputHash = await sha256Hex(toHash);
   if (inputHash.toLowerCase() !== String(user.password_hash).toLowerCase()) {
     return json({ ok: false, error: "invalid" }, 401);
   }
@@ -88,7 +91,7 @@ Deno.serve(async (req) => {
     if (String(newPassword) === String(password)) {
       return json({ ok: false, error: "same_password" }, 400);
     }
-    const newHash = await sha256Hex(String(newPassword));
+    const newHash = await sha256Hex(user.salt ? (user.salt + ":" + String(newPassword)) : String(newPassword));
     const { error: upErr } = await admin
       .from("users")
       .update({ password_hash: newHash })
@@ -97,9 +100,17 @@ Deno.serve(async (req) => {
     return json({ ok: true, changed: true });
   }
 
-  const exp = Date.now() + 8 * 60 * 60 * 1000;
+  const exp = Math.floor(Date.now() / 1000) + 8 * 60 * 60; // giây (chuẩn chung)
   const token = await signToken(
-    { u: user.username, r: user.role, s: user.scope ?? "", b: user.bu ?? "", exp },  // thêm b
+    {
+      username: user.username,
+      ho_ten: user.ho_va_ten || user.username,
+      role: String(user.role || "").toLowerCase(), // role gốc chữ thường; mỗi app tự map
+      mien: user.mien || "MB",
+      bu: user.bu ?? "",
+      scope: user.scope ?? "",
+      exp,
+    },
     secret,
   );
 
@@ -109,6 +120,6 @@ Deno.serve(async (req) => {
     username: user.username,
     role: user.role,
     scope: user.scope,
-    bu: user.bu,   // thêm bu vào response cho frontend dùng
+    bu: user.bu,   // response giữ nguyên (frontend sale-target đang đọc phẳng)
   });
 });

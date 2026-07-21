@@ -4,6 +4,12 @@
 # working directory name when running `supabase init`.
 project_id = "sale_targets"
 
+[functions.sale_target-login]
+verify_jwt = false
+
+[functions.sale_target-api]
+verify_jwt = false
+
 [api]
 enabled = true
 # Port to use for the API URL.
