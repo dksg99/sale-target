@@ -94,6 +94,7 @@ const User = Ic(['M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2', 'M12 11a4 4 0 1 0 
 const Package = Ic(['m7.5 4.27 9 5.15', 'M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z', 'M3.27 6.96 12 12.01l8.73-5.05', 'M12 22.08V12']);
 const Eye = Ic(['M2.06 12.35a1 1 0 0 1 0-.7 10.5 10.5 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.5 10.5 0 0 1-19.88 0Z', 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z']);
 const EyeOff = Ic(['M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68', 'M6.61 6.61A13.5 13.5 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61', 'M14.12 14.12A3 3 0 1 1 9.88 9.88', 'm2 2 20 20']);
+const Trash2 = Ic(['M3 6h18', 'M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2', 'M10 11v6', 'M14 11v6']);
 
 // ============ CONSTANTS ============
 const MONTHS = ['2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09', '2026-10', '2026-11', '2026-12', '2027-01', '2027-02', '2027-03'];
@@ -767,6 +768,40 @@ function PriceCell({
 }
 
 // ============ PRODUCT ROW ============
+// Inline-edit cho ô sticky (bộ vật tư / sản phẩm) — chỉ dùng cho admin.
+function StickyEdit({ value, onSave, className = '', title }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value || '');
+  const ref = useRef(null);
+  useEffect(() => {
+    if (editing && ref.current) { ref.current.focus(); ref.current.select(); }
+  }, [editing]);
+  useEffect(() => { setDraft(value || ''); }, [value]);
+  if (editing) {
+    const commit = () => {
+      const v = draft.trim();
+      if (v !== (value || '')) onSave(v);
+      setEditing(false);
+    };
+    return /*#__PURE__*/React.createElement("input", {
+      ref,
+      value: draft,
+      onChange: e => setDraft(e.target.value),
+      onBlur: commit,
+      onKeyDown: e => {
+        if (e.key === 'Enter') { e.preventDefault(); commit(); }
+        else if (e.key === 'Escape') setEditing(false);
+      },
+      className: "w-full px-1 py-0.5 text-[12px] outline-none ring-2 ring-emerald-500 ring-inset bg-white rounded"
+    });
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: `${className} cursor-text hover:bg-emerald-50/60 rounded px-0.5 -mx-0.5`,
+    title: (title || value || '') + ' — bấm để sửa',
+    onClick: () => { setDraft(value || ''); setEditing(true); }
+  }, value || '·');
+}
+
 // monthly[i] = { rev, dt, revUpd, hasUpd, rows: [...] }
 function ProductRow({
   product,
@@ -776,6 +811,8 @@ function ProductRow({
   pendingKeys,
   onCommit,
   canEdit,
+  isAdmin,
+  onDeleteProduct,
   showBasePlan
 }) {
   const allRows = useMemo(() => monthly.flatMap(c => c.rows), [monthly]);
@@ -864,6 +901,18 @@ function ProductRow({
       value: newVal
     })));
   };
+  // Cột nhận diện (bộ vật tư / sản phẩm): ghi CÙNG một giá trị vào MỌI dòng của SP
+  // (khác commitProductField — cái đó gộp về dòng anchor và zero dòng khác).
+  const commitIdentity = (key, value) => {
+    if (!allRows.length) return;
+    onCommit(allRows.map(r => ({ row: r._row, key, value })));
+  };
+  const handleDelete = () => {
+    if (!allRows.length) return;
+    if (confirm(`Xóa sản phẩm "${product}"${mset ? ` (bộ: ${mset})` : ''} — ${allRows.length} dòng (mọi tháng)?\nKhông hoàn tác được.`)) {
+      onDeleteProduct(allRows.map(r => r._row));
+    }
+  };
   const pend = key => allRows.some(r => pendingKeys.has(`${r._row}:${key}`));
   const pendUpd = cell => cell.rows.some(r => pendingKeys.has(`${r._row}:revUpd`));
   return /*#__PURE__*/React.createElement("tr", {
@@ -875,10 +924,15 @@ function ProductRow({
       minWidth: 180,
       maxWidth: 180
     }
-  }, showMset ? /*#__PURE__*/React.createElement("div", {
+  }, showMset ? (isAdmin ? /*#__PURE__*/React.createElement(StickyEdit, {
+    value: mset,
+    title: mset,
+    className: "truncate",
+    onSave: v => commitIdentity('mset', v)
+  }) : /*#__PURE__*/React.createElement("div", {
     className: "truncate",
     title: mset
-  }, mset) : /*#__PURE__*/React.createElement("span", {
+  }, mset)) : /*#__PURE__*/React.createElement("span", {
     className: "text-slate-300"
   }, "›")), /*#__PURE__*/React.createElement("td", {
     className: "px-3 py-1.5 text-[12px] text-slate-800 border-r border-b border-slate-100 sticky bg-white group-hover:bg-slate-50/40 z-[1] font-medium",
@@ -889,9 +943,22 @@ function ProductRow({
       left: 180
     }
   }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-1"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 min-w-0"
+  }, isAdmin ? /*#__PURE__*/React.createElement(StickyEdit, {
+    value: product,
+    title: product,
+    className: "truncate font-medium",
+    onSave: v => commitIdentity('prod', v)
+  }) : /*#__PURE__*/React.createElement("div", {
     className: "truncate",
     title: product
-  }, product)), /*#__PURE__*/React.createElement(EditableCell, {
+  }, product)), isAdmin && /*#__PURE__*/React.createElement("button", {
+    onClick: handleDelete,
+    title: "Xóa sản phẩm (mọi tháng)",
+    className: "shrink-0 text-slate-300 hover:text-red-600 opacity-0 group-hover:opacity-100 transition"
+  }, /*#__PURE__*/React.createElement(Trash2, { size: 13 })))), /*#__PURE__*/React.createElement(EditableCell, {
     value: stats.q14,
     pending: pend('qOld'),
     locked: !canEdit,
@@ -938,7 +1005,10 @@ function ProductRow({
     locked: true,
     width: 58,
     bg: "bg-slate-50/40"
-  })) : []), /*#__PURE__*/React.createElement("td", {
+  })) : [/*#__PURE__*/React.createElement("td", {
+    key: 'b-collapsed',
+    className: "px-1 py-1 border-r border-b border-slate-100 bg-slate-50/40"
+  })]), /*#__PURE__*/React.createElement("td", {
     className: "px-2 py-1.5 text-[12px] text-right tabular-nums font-semibold text-slate-800 border-r border-b border-slate-100 bg-slate-100/70",
     style: {
       width: 100
@@ -1016,6 +1086,8 @@ function ProductGroupSection({
   pendingKeys,
   onCommit,
   canEdit,
+  isAdmin,
+  onDeleteProduct,
   showBasePlan,
   onToggleBasePlan
 }) {
@@ -1261,6 +1333,8 @@ function ProductGroupSection({
       pendingKeys: pendingKeys,
       onCommit: onCommit,
       canEdit: canEdit,
+      isAdmin: isAdmin,
+      onDeleteProduct: onDeleteProduct,
       showBasePlan: showBasePlan
     });
   }))))));
@@ -1302,6 +1376,8 @@ function CustomerCard({
   pendingKeys,
   onCommit,
   canEdit,
+  isAdmin,
+  onDeleteProduct,
   defaultOpen,
   showBasePlan,
   onToggleBasePlan
@@ -1404,6 +1480,8 @@ function CustomerCard({
     pendingKeys: pendingKeys,
     onCommit: onCommit,
     canEdit: canEdit,
+    isAdmin: isAdmin,
+    onDeleteProduct: onDeleteProduct,
     showBasePlan: showBasePlan,
     onToggleBasePlan: onToggleBasePlan
   }))));
@@ -2516,6 +2594,27 @@ function App() {
     });
   }, []);
 
+  // Xóa 1 sản phẩm (mọi dòng) — admin. Gọi thẳng backend (không qua drafts), rồi bỏ khỏi state.
+  const deleteProduct = useCallback(async rowIds => {
+    const ids = (rowIds || []).map(Number).filter(Number.isFinite);
+    if (!ids.length) return;
+    const idSet = new Set(ids);
+    try {
+      const res = await api('deleteProduct', { rows: ids });
+      setRows(prev => prev.filter(r => !idSet.has(r._row)));
+      setDrafts(prev => {
+        const next = {};
+        for (const [k, v] of Object.entries(prev)) {
+          if (!idSet.has(Number(k.split(':')[0]))) next[k] = v;
+        }
+        return next;
+      });
+      if (res && typeof res.rev === 'number') setDataRev(res.rev);
+    } catch (err) {
+      setError('Xóa thất bại: ' + err.message);
+    }
+  }, []);
+
   // Save all drafts to Sheet in one batch
   const saveDrafts = useCallback(async () => {
     const entries = Object.entries(drafts);
@@ -3039,6 +3138,8 @@ function App() {
     pendingKeys: draftKeys,
     onCommit: commit,
     canEdit: canEdit,
+    isAdmin: isAdmin,
+    onDeleteProduct: deleteProduct,
     defaultOpen: false,
     showBasePlan: showBasePlan,
     onToggleBasePlan: () => setShowBasePlan(v => !v)

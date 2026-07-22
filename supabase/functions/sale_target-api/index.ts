@@ -64,6 +64,8 @@ const FIELDS = ["fy","mo","region","ps","cust","custId","grp","prod","mset",
   "qOld","mMain","dMain","qMain","mAdd","qAdd","rev","revUpd","price","note","act","dt"];
 // Chỉ các cột này được phép sửa qua updateCells
 const EDITABLE = new Set(["qOld","mMain","dMain","qMain","mAdd","qAdd","revUpd","note","price"]);
+// Các cột nhận diện (bộ vật tư / sản phẩm) — CHỈ admin được sửa qua updateCells.
+const ADMIN_EDITABLE = new Set(["mset","prod"]);
 
 // Lọc dữ liệu theo quyền của user.
 // - admin/manager: xem tất cả team (bu); nếu client gửi payload.bu cụ thể → lọc theo team đó.
@@ -229,15 +231,29 @@ Deno.serve(async (req) => {
 
     if (action === "updateCells") {
       if (!canEdit) return json({ ok: false, error: "forbidden" }, 403);
+      const isAdmin = sess.r === "admin";
       const updates = payload.updates || [];
       for (const u of updates) {
-        if (!EDITABLE.has(u.key)) continue; // bỏ qua cột không cho sửa
+        // cột thường: ai edit được (admin/ps); cột nhận diện (mset/prod): chỉ admin.
+        const allowed = EDITABLE.has(u.key) || (isAdmin && ADMIN_EDITABLE.has(u.key));
+        if (!allowed) continue; // bỏ qua cột không cho sửa / không đủ quyền
         const col = COL[u.key];
         const patch = {};
         patch[col] = u.value === "" ? null : u.value;
         const { error } = await db.from("sale_target").update(patch).eq("id", Number(u.row));
         if (error) throw new Error(error.message);
       }
+      return json({ ok: true, rev: await getRev(db) });
+    }
+
+    if (action === "deleteProduct") {
+      // Xóa toàn bộ dòng của 1 sản phẩm (mọi tháng / mọi mức giá) theo danh sách id.
+      // CHỈ admin. Front-end gửi payload.rows = [id, ...].
+      if (sess.r !== "admin") return json({ ok: false, error: "forbidden" }, 403);
+      const ids = (payload.rows || []).map(Number).filter((n) => Number.isFinite(n));
+      if (!ids.length) return json({ ok: false, error: "no_rows" }, 400);
+      const { error } = await db.from("sale_target").delete().in("id", ids);
+      if (error) throw new Error(error.message);
       return json({ ok: true, rev: await getRev(db) });
     }
 
