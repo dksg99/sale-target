@@ -172,6 +172,28 @@ const fmtTy3 = v => {
 const moneyTy3 = v => MASK_MONEY ? '•••' : !v ? '—' : fmtTy3(v);
 // (đơn giá mới đã bỏ; DT = SL × đơn giá cũ)
 
+// Bỏ dấu tiếng Việt để so khớp/tìm kiếm không phân biệt dấu & hoa/thường.
+const deaccent = s => String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd');
+// Chuẩn hoá tên khách hàng để HIỂN THỊ:
+//  - "BỆNH VIỆN X" → "BV X" (viết hoa chữ cái đầu mỗi từ)
+//  - không có "bệnh viện" → viết hoa chữ cái đầu mỗi từ
+// (chỉ đổi cách hiển thị; giá trị gốc gửi lên server không đổi)
+const titleWord = w => w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : w;
+const fmtCust = name => {
+  if (name == null) return name;
+  const s = String(name).trim().replace(/\s+/g, ' ');
+  if (!s) return s;
+  let words = s.split(' ');
+  let prefix = '';
+  if (words.length >= 2 && deaccent(words[0]) === 'benh' && deaccent(words[1]) === 'vien') {
+    prefix = 'BV ';
+    words = words.slice(2);
+  }
+  return prefix + words.map(titleWord).join(' ');
+};
+// Bộ lọc đa lựa chọn: mảng rỗng = không lọc (tất cả); ngược lại giá trị phải nằm trong mảng.
+const inSel = (sel, v) => !sel || sel.length === 0 || sel.includes(v);
+
 // ============ API (Supabase Edge Functions) ============
 const SUPABASE_URL = "https://nrfxymnfmjhbsgpipvkb.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yZnh5bW5mbWpoYnNncGlwdmtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4ODk2OTQsImV4cCI6MjA5ODQ2NTY5NH0.cN-jTdPOLWKd9kNa1nNMENzHcY0_BftyYgPEbuVTWeo";
@@ -295,6 +317,69 @@ function TeamSwitcher({ value, onChange }) {
     onClick: () => { onChange(o.key); setOpen(false); },
     className: `px-3 py-1.5 text-[13px] cursor-pointer ${o.key === value ? 'bg-emerald-50 text-emerald-700 font-medium' : 'text-slate-700 hover:bg-slate-50'}`
   }, o.name))));
+}
+
+// ============ MULTI-SELECT (dropdown chọn nhiều mục, đồng bộ thiết kế) ============
+// options: [{ value, label }]; selected: mảng value; onChange(mảng value mới); mảng rỗng = tất cả.
+function MultiSelect({ label, options, selected, onChange, searchable }) {
+  const h = React.createElement;
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState('');
+  const boxRef = useRef(null);
+  useEffect(() => {
+    const onDoc = e => { if (boxRef.current && !boxRef.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, []);
+  const sel = selected || [];
+  const shown = searchable && q.trim()
+    ? options.filter(o => deaccent(o.label).includes(deaccent(q.trim())))
+    : options;
+  const toggle = v => sel.includes(v) ? onChange(sel.filter(x => x !== v)) : onChange([...sel, v]);
+  const summary = sel.length === 0
+    ? 'tất cả'
+    : sel.length === 1
+      ? ((options.find(o => o.value === sel[0]) || {}).label || sel[0])
+      : `${sel.length} mục`;
+  return h("div", { ref: boxRef, className: "relative inline-block" },
+    h("button", {
+      type: "button",
+      onClick: () => setOpen(o => !o),
+      className: "flex items-center gap-1.5 px-2.5 py-1.5 text-[13px] border border-slate-200 rounded-md bg-white hover:border-slate-300 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 max-w-[240px]"
+    },
+      h("span", { className: "text-slate-400 shrink-0" }, label + ':'),
+      h("span", { className: `truncate ${sel.length ? 'text-emerald-700 font-medium' : 'text-slate-600'}` }, summary),
+      h(ChevronDown, { size: 13, className: "text-slate-400 shrink-0" })
+    ),
+    open && h("div", { className: "absolute left-0 top-full mt-1 min-w-[220px] max-w-[320px] bg-white border border-slate-200 rounded-md shadow-lg z-50 py-1" },
+      searchable && h("div", { className: "px-2 pb-1.5 pt-0.5" },
+        h("input", {
+          value: q, onChange: e => setQ(e.target.value), autoFocus: true,
+          placeholder: "Tìm…",
+          className: "w-full px-2 py-1 text-[12px] border border-slate-200 rounded outline-none focus:border-emerald-500"
+        })
+      ),
+      h("div", {
+        onClick: () => onChange([]),
+        className: `px-3 py-1.5 text-[13px] cursor-pointer border-b border-slate-100 ${sel.length === 0 ? 'text-emerald-700 font-medium' : 'text-slate-500 hover:bg-slate-50'}`
+      }, "Tất cả (bỏ lọc)"),
+      h("div", { className: "max-h-[260px] overflow-y-auto" },
+        shown.length === 0
+          ? h("div", { className: "px-3 py-2 text-[12px] text-slate-400" }, "Không có mục")
+          : shown.map(o => {
+              const on = sel.includes(o.value);
+              return h("div", {
+                key: o.value,
+                onClick: () => toggle(o.value),
+                className: `flex items-center gap-2 px-3 py-1.5 text-[13px] cursor-pointer ${on ? 'bg-emerald-50/60 text-emerald-800' : 'text-slate-700 hover:bg-slate-50'}`
+              },
+                h("span", { className: `w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${on ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300'}` }, on ? h(Check, { size: 11 }) : null),
+                h("span", { className: "truncate" }, o.label)
+              );
+            })
+      )
+    )
+  );
 }
 
 // ============ LOGIN GATE ============
@@ -1331,10 +1416,10 @@ function ProductSummaryView({ rows, psFilter, regionFilter, custFilter, groupFil
 
   const data = useMemo(() => {
     const filtered = rows.filter(r =>
-      (psFilter === 'all' || r.ps === psFilter) &&
-      (regionFilter === 'all' || r.region === regionFilter) &&
-      (custFilter === 'all' || r.cust === custFilter) &&
-      (groupFilter === 'all' || r.grp === groupFilter)
+      inSel(psFilter, r.ps) &&
+      inSel(regionFilter, r.region) &&
+      inSel(custFilter, r.cust) &&
+      inSel(groupFilter, r.grp)
     );
     // mo[]  = SL KH update từng tháng (quá khứ = thực hiện, hiện tại/tương lai = KH update) — giống 'SL update' ở tab chi tiết
     // thYtd = tổng thực hiện luỹ kế (các tháng đã qua)
@@ -1613,7 +1698,7 @@ function SummaryView({
   groupFilter
 }) {
   const data = useMemo(() => {
-    const filtered = rows.filter(r => (psFilter === 'all' || r.ps === psFilter) && (regionFilter === 'all' || r.region === regionFilter) && (custFilter === 'all' || r.cust === custFilter) && (groupFilter === 'all' || r.grp === groupFilter));
+    const filtered = rows.filter(r => inSel(psFilter, r.ps) && inSel(regionFilter, r.region) && inSel(custFilter, r.cust) && inSel(groupFilter, r.grp));
     const regMap = new Map();
     for (const r of filtered) {
       const rKey = r.region || '(Không rõ miền)';
@@ -2076,7 +2161,7 @@ function CustomerPicker({ customers, value, onChange, className }) {
     return () => document.removeEventListener('mousedown', onDoc);
   }, [open]);
   const pick = c => { onChange(c.custId || c.cust); setOpen(false); setQ(''); };
-  const display = selected ? (selected.cust + (selected.custId ? ' · ' + selected.custId : '')) : '';
+  const display = selected ? (fmtCust(selected.cust) + (selected.custId ? ' · ' + selected.custId : '')) : '';
   return h("div", { ref: boxRef, className: "relative" },
     h("input", {
       value: open ? q : display,
@@ -2102,7 +2187,7 @@ function CustomerPicker({ customers, value, onChange, className }) {
             onMouseEnter: () => setHi(i),
             className: `px-3 py-1.5 text-[12.5px] cursor-pointer flex items-center justify-between gap-2 ${i === hi ? 'bg-emerald-50' : 'hover:bg-slate-50'}`
           },
-          h("span", { className: "font-medium text-slate-800 truncate" }, c.cust || '—'),
+          h("span", { className: "font-medium text-slate-800 truncate" }, fmtCust(c.cust) || '—'),
           c.custId && h("span", { className: "text-slate-400 text-[11px] font-mono flex-shrink-0" }, c.custId)
         ))
     )
@@ -2148,7 +2233,7 @@ function AddProductPanel({
       price: selected.price
     });
     setBusy(false);
-    setDone(`Đã thêm "${selected.prod}" cho ${cust.cust} (PS ${ps})`);
+    setDone(`Đã thêm "${selected.prod}" cho ${fmtCust(cust.cust)} (PS ${ps})`);
     setProd('');
   };
   return h("div", {
@@ -2284,10 +2369,11 @@ function App() {
   const [savedFlash, setSavedFlash] = useState(false);
   const [tab, setTab] = useState('detail'); // 'detail' | 'summary'
   const [search, setSearch] = useState('');
-  const [psFilter, setPsFilter] = useState('all');
-  const [regionFilter, setRegionFilter] = useState('all');
-  const [groupFilter, setGroupFilter] = useState('all');
-  const [custFilter, setCustFilter] = useState('all');
+  // Bộ lọc đa lựa chọn: mảng rỗng = tất cả (không lọc).
+  const [psFilter, setPsFilter] = useState([]);
+  const [regionFilter, setRegionFilter] = useState([]);
+  const [groupFilter, setGroupFilter] = useState([]);
+  const [custFilter, setCustFilter] = useState([]);
   const [fields, setFields] = useState([]);
   const [catalog, setCatalog] = useState([]);
   const [customers, setCustomers] = useState([]); // danh mục KH đầy đủ từ dm_khach_hang
@@ -2342,6 +2428,8 @@ function App() {
           const v = row[j];
           if (v !== '' && v !== null && v !== undefined) o[fields[j]] = v;
         }
+        // Chuẩn hoá tên KH để hiển thị (BV + viết hoa chữ cái đầu). custId giữ nguyên làm khoá.
+        if (o.cust) o.cust = fmtCust(o.cust);
         objs[i] = o;
       }
       setRows(objs);
@@ -2493,15 +2581,15 @@ function App() {
   const psList = useMemo(() => {
     const s = new Set();
     rows.forEach(r => {
-      if ((regionFilter === 'all' || r.region === regionFilter) && r.ps) s.add(r.ps);
+      if (inSel(regionFilter, r.region) && r.ps) s.add(r.ps);
     });
     return Array.from(s).sort();
   }, [rows, regionFilter]);
   const allGroups = useMemo(() => {
     const s = new Set();
     rows.forEach(r => {
-      if (regionFilter !== 'all' && r.region !== regionFilter) return;
-      if (psFilter !== 'all' && r.ps !== psFilter) return;
+      if (!inSel(regionFilter, r.region)) return;
+      if (!inSel(psFilter, r.ps)) return;
       if (r.grp) s.add(r.grp);
     });
     return Array.from(s).sort();
@@ -2509,8 +2597,8 @@ function App() {
   const custList = useMemo(() => {
     const m = new Map();
     rows.forEach(r => {
-      if (regionFilter !== 'all' && r.region !== regionFilter) return;
-      if (psFilter !== 'all' && r.ps !== psFilter) return;
+      if (!inSel(regionFilter, r.region)) return;
+      if (!inSel(psFilter, r.ps)) return;
       if (r.cust && !m.has(r.cust)) m.set(r.cust, r.custId);
     });
     return Array.from(m.entries()).map(([cust, id]) => ({
@@ -2535,10 +2623,10 @@ function App() {
     const q = search.toLowerCase().trim();
     const byCust = new Map();
     for (const r of effectiveRows) {
-      if (regionFilter !== 'all' && r.region !== regionFilter) continue;
-      if (psFilter !== 'all' && r.ps !== psFilter) continue;
-      if (custFilter !== 'all' && r.cust !== custFilter) continue;
-      if (groupFilter !== 'all' && r.grp !== groupFilter) continue;
+      if (!inSel(regionFilter, r.region)) continue;
+      if (!inSel(psFilter, r.ps)) continue;
+      if (!inSel(custFilter, r.cust)) continue;
+      if (!inSel(groupFilter, r.grp)) continue;
       if (q && !(r.cust?.toLowerCase().includes(q) || r.prod?.toLowerCase().includes(q) || r.custId?.toLowerCase().includes(q) || r.mset?.toLowerCase().includes(q))) continue;
       const cKey = r.cust || '—';
       if (!byCust.has(cKey)) byCust.set(cKey, {
@@ -2695,14 +2783,14 @@ function App() {
       const s = String(v).replace(/"/g, '""');
       return /[",\n]/.test(s) ? `"${s}"` : s;
     };
-    const lines = effectiveRows.filter(r => (regionFilter === 'all' || r.region === regionFilter) && (psFilter === 'all' || r.ps === psFilter) && (custFilter === 'all' || r.cust === custFilter)).map(r => cols.map(f => esc(r[f])).join(','));
+    const lines = effectiveRows.filter(r => inSel(regionFilter, r.region) && inSel(psFilter, r.ps) && inSel(custFilter, r.cust)).map(r => cols.map(f => esc(r[f])).join(','));
     const csv = '\ufeff' + [header.join(','), ...lines].join('\n');
     const blob = new Blob([csv], {
       type: 'text/csv;charset=utf-8;'
     });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `ke-hoach_${psFilter === 'all' ? 'all' : psFilter.replace(/\s/g, '-')}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `ke-hoach_${psFilter.length === 0 ? 'all' : psFilter.length === 1 ? psFilter[0].replace(/\s/g, '-') : psFilter.length + 'ps'}_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
   };
   const logout = () => {
@@ -2865,7 +2953,7 @@ function App() {
   }), /*#__PURE__*/React.createElement(StatCard, {
     label: "Số sản phẩm",
     value: String(stats.productCount),
-    sublabel: `${psFilter === 'all' ? 'tất cả PS' : psFilter}`,
+    sublabel: `${psFilter.length === 0 ? 'tất cả PS' : psFilter.length === 1 ? psFilter[0] : psFilter.length + ' PS'}`,
     accent: "slate"
   }), /*#__PURE__*/React.createElement(StatCard, {
     label: "Chưa lưu",
@@ -2878,50 +2966,36 @@ function App() {
     className: "bg-white rounded-lg border border-slate-200 px-3 py-2.5 flex items-center gap-2.5 flex-wrap mb-4"
   }, /*#__PURE__*/React.createElement("span", {
     className: "text-[11px] uppercase tracking-wide text-slate-500 font-semibold pl-1"
-  }, "Lọc"), /*#__PURE__*/React.createElement("select", {
-    value: groupFilter,
-    onChange: e => setGroupFilter(e.target.value),
-    className: "px-2.5 py-1.5 text-[13px] border border-slate-200 rounded-md bg-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
-  }, /*#__PURE__*/React.createElement("option", {
-    value: "all"
-  }, "Nhóm SP: tất cả"), allGroups.map(g => /*#__PURE__*/React.createElement("option", {
-    key: g,
-    value: g
-  }, g))), regionList.length > 0 && (auth.role === 'admin' || auth.role === 'manager' || auth.role === 'product_manager') && /*#__PURE__*/React.createElement("select", {
-    value: regionFilter,
-    onChange: e => {
-      setRegionFilter(e.target.value);
-      setPsFilter('all');
-      setCustFilter('all');
-    },
-    className: "px-2.5 py-1.5 text-[13px] border border-slate-200 rounded-md bg-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
-  }, /*#__PURE__*/React.createElement("option", {
-    value: "all"
-  }, "Miền: tất cả"), regionList.map(rg => /*#__PURE__*/React.createElement("option", {
-    key: rg,
-    value: rg
-  }, rg))), auth.role !== 'ps' && /*#__PURE__*/React.createElement("select", {
-    value: psFilter,
-    onChange: e => {
-      setPsFilter(e.target.value);
-      setCustFilter('all');
-    },
-    className: "px-2.5 py-1.5 text-[13px] border border-slate-200 rounded-md bg-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
-  }, /*#__PURE__*/React.createElement("option", {
-    value: "all"
-  }, "PS: tất cả (", psList.length, ")"), psList.map(p => /*#__PURE__*/React.createElement("option", {
-    key: p,
-    value: p
-  }, p))), /*#__PURE__*/React.createElement("select", {
-    value: custFilter,
-    onChange: e => setCustFilter(e.target.value),
-    className: "px-2.5 py-1.5 text-[13px] border border-slate-200 rounded-md bg-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 max-w-[220px]"
-  }, /*#__PURE__*/React.createElement("option", {
-    value: "all"
-  }, "Khách hàng: tất cả (", custList.length, ")"), custList.map(c => /*#__PURE__*/React.createElement("option", {
-    key: c.cust,
-    value: c.cust
-  }, c.cust))), /*#__PURE__*/React.createElement("div", {
+  }, "Lọc"), /*#__PURE__*/React.createElement(MultiSelect, {
+    label: "Nhóm SP",
+    options: allGroups.map(g => ({ value: g, label: g })),
+    selected: groupFilter,
+    onChange: setGroupFilter
+  }), regionList.length > 0 && (auth.role === 'admin' || auth.role === 'manager' || auth.role === 'product_manager') && /*#__PURE__*/React.createElement(MultiSelect, {
+    label: "Miền",
+    options: regionList.map(rg => ({ value: rg, label: rg })),
+    selected: regionFilter,
+    onChange: v => {
+      setRegionFilter(v);
+      setPsFilter([]);
+      setCustFilter([]);
+    }
+  }), auth.role !== 'ps' && /*#__PURE__*/React.createElement(MultiSelect, {
+    label: "PS",
+    searchable: true,
+    options: psList.map(p => ({ value: p, label: p })),
+    selected: psFilter,
+    onChange: v => {
+      setPsFilter(v);
+      setCustFilter([]);
+    }
+  }), /*#__PURE__*/React.createElement(MultiSelect, {
+    label: "Khách hàng",
+    searchable: true,
+    options: custList.map(c => ({ value: c.cust, label: c.cust })),
+    selected: custFilter,
+    onChange: setCustFilter
+  }), /*#__PURE__*/React.createElement("div", {
     className: "flex-1"
   }), tab === 'detail' && /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowBasePlan(v => !v),
